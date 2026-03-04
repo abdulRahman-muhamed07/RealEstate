@@ -1,0 +1,29 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using RealEstate.DTOs.Request;
+using RealEstate.Services;
+
+namespace RealEstate.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class PropertyController : ControllerBase
+    {
+        private readonly IPropertyService _service;
+        public PropertyController(IPropertyService service) => _service = service;
+
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll([FromQuery] PropertyFilterDto filter) => await _service.GetFilteredPropertiesAsync(filter);
+
+        [HttpPost("add")]
+        public async Task<IActionResult> Add([FromForm] PropertyCreateDto dto) => await _service.AddPropertyAsync(dto);
+
+        [HttpGet("pending")]
+        public async Task<IActionResult> GetPending() => await _service.GetPendingRequestsAsync();
+
+        [HttpPost("approve/{id}")]
+        public async Task<IActionResult> Approve(int id) => await _service.UpdateStatusAsync(id, true);
+
+        [HttpDelete("reject/{id}")]
+        public async Task<IActionResult> Reject(int id) => await _service.UpdateStatusAsync(id, false);
+    }
+}
