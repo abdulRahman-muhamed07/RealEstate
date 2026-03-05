@@ -1,19 +1,25 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RealEstate.DTOs.Request;
 using RealEstate.Models;
-using static RealEstate.Models.Property;
 
 namespace RealEstate.Services
 {
     public interface IPropertyService
     {
+        // Property Operations
         Task<IActionResult> GetFilteredPropertiesAsync(PropertyFilterDto filter);
+        Task<IActionResult> GetPropertyByIdAsync(int id);
         Task<IActionResult> AddPropertyAsync(PropertyCreateDto dto);
-        Task<IActionResult> GetPendingRequestsAsync();
-        Task<IActionResult> UpdateStatusAsync(int id, bool approve, PropertyStatus? newStatus = null);
-        Task<IActionResult> GetUserPropertiesAsync(string userId);
-        Task<IActionResult> ToggleFavoriteAsync(string userId, int propertyId);
-        Task<IActionResult> GetUserFavoritesAsync(string userId);
+        Task<IActionResult> UpdatePropertyAsync(int id, PropertyCreateDto dto);
+        Task<IActionResult> DeletePropertyAsync(int id);
 
+        // Admin Operations
+        Task<IActionResult> GetPendingRequestsAsync();
+        Task<IActionResult> UpdateStatusAsync(int id, bool approve, Property.PropertyStatus? newStatus = null);
+
+        // User Specific
+        Task<IActionResult> GetUserPropertiesAsync(string? userId = null);
+        Task<IActionResult> ToggleFavoriteAsync(string? userId, int propertyId);
+        Task<IActionResult> GetUserFavoritesAsync(string? userId);
     }
 }
