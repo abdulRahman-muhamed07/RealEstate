@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Text.Json.Serialization;
 
 namespace RealEstate.Models
 {
@@ -10,6 +11,7 @@ namespace RealEstate.Models
         public string? PhoneNumbers { get; set; } = string.Empty;
         public bool IsCompany { get; set; } = false;
 
+        [JsonIgnore]
         public ICollection<Property> MyProperties { get; set; }
     }
 }

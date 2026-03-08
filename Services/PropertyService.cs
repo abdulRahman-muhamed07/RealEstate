@@ -58,9 +58,10 @@ namespace RealEstate.Services
         {
             var query = _unitOfWork.Property.Query(
                 p => p.IsApproved && p.Status == filter.Status,
-                includeProperties: "Category,City"
+                includeProperties: "Category,City,Owner"
             );
 
+            // --- الـ Filtering ---
             if (filter.CityId.HasValue && filter.CityId > 0)
                 query = query.Where(p => p.CityId == filter.CityId);
 
@@ -70,6 +71,7 @@ namespace RealEstate.Services
             if (filter.MaxPrice.HasValue && filter.MaxPrice > 0)
                 query = query.Where(p => p.Price <= filter.MaxPrice.Value);
 
+            // --- الـ Sorting ---
             query = filter.SortBy?.ToLower() switch
             {
                 "price_asc" => query.OrderBy(p => p.Price),
@@ -79,9 +81,45 @@ namespace RealEstate.Services
             };
 
             var totalCount = await query.CountAsync();
+
             var data = await query
                 .Skip((filter.Page - 1) * filter.PageSize)
                 .Take(filter.PageSize)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Title,
+                    p.Status,
+                    p.Description,
+                    p.Price,
+                    p.Area,
+                    ImageUrl = p.ImageUrl,
+                    p.IsForRent,
+                    p.IsApproved,
+                    p.CreatedAt,
+                    p.Bedrooms,
+                    p.Bathrooms,
+                    p.CategoryId,
+                    p.CityId,
+                    p.OwnerId,
+                    Owner = new
+                    {
+                        p.Owner.Id,
+                        p.Owner.FirstName,
+                        p.Owner.LastName,
+                        p.Owner.IsCompany,
+                    },
+                    Category = new
+                    {
+                        p.Category.Id,
+                        p.Category.Name
+                    },
+                    City = new
+                    {
+                        p.City.Id,
+                        p.City.Name
+                    }
+                })
                 .ToListAsync();
 
             return Ok(new { totalCount, data });

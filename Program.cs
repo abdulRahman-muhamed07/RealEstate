@@ -27,7 +27,14 @@ namespace RealEstate
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddControllers();
             builder.Services.AddScoped<IPropertyService, PropertyService>();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+            builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // json circle
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
             builder.Services.AddOpenApi();
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddHttpContextAccessor();
