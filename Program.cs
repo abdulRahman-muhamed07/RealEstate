@@ -27,7 +27,8 @@ namespace RealEstate
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddControllers();
             builder.Services.AddScoped<IPropertyService, PropertyService>();
-
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>() 
+                    .AddEntityFrameworkStores<ApplicationDbContext>();
             builder.Services.AddControllers()
              .AddJsonOptions(options =>
             {

@@ -243,18 +243,40 @@ namespace RealEstate.Services
         [Authorize]
         public async Task<IActionResult> DeletePropertyAsync(int id)
         {
-            var userId = GetCurrentUserId();
-            var isAdmin = _httpContextAccessor.HttpContext?.User?.IsInRole("Admin") ?? false;
+            try
+            {
+                // 
+                var userId = GetCurrentUserId();
+                var user = _httpContextAccessor.HttpContext?.User;
+                var isAdmin = user?.IsInRole("Admin") ?? false;
 
-            var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
-            if (property == null) return NotFound();
+                //
+                var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
 
-            if (property.OwnerId != userId && !isAdmin) return Forbid();
+                if (property == null)
+                    return NotFound(new { message = "العقار غير موجود بالفعل." });
 
-            DeleteImageFile(property.ImageUrl);
-            _unitOfWork.Property.Remove(property);
-            await _unitOfWork.SaveAsync();
-            return Ok(new { message = "Property deleted successfully." });
+               
+                if (property.OwnerId != userId && !isAdmin)
+                    return Forbid();
+
+                //delete the img if its exist
+                if (!string.IsNullOrEmpty(property.ImageUrl))
+                {
+                    DeleteImageFile(property.ImageUrl);
+                }
+
+                //delete fom database
+                _unitOfWork.Property.Remove(property);
+                await _unitOfWork.SaveAsync();
+
+                return Ok(new { message = "تم حذف العقار بنجاح." });
+            }
+            catch (Exception ex)
+            {
+                // تسجيل الخطأ (Logging) لو عندك Logger
+                return StatusCode(500, new { message = "حصلت مشكلة وأحنا بنمسح العقار.", error = ex.Message });
+            }
         }
 
         #endregion
