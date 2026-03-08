@@ -29,12 +29,26 @@ namespace RealEstate
             builder.Services.AddScoped<IPropertyService, PropertyService>();
 
             builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
+             .AddJsonOptions(options =>
+            {
+
+
         // json circle
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
     });
+
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.HttpOnly = true;
+                options.ExpireTimeSpan = TimeSpan.FromDays(7);
+
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                };
+            });
             builder.Services.AddOpenApi();
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddHttpContextAccessor();
