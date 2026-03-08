@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RealEstate.DataAccess;
 using RealEstate.Models;
+using RealEstate.Services;
 using System.Threading.Tasks;
 
 namespace RealEstate
@@ -25,9 +26,11 @@ namespace RealEstate
                  .AddEntityFrameworkStores<ApplicationDbContext>();
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddControllers();
+            builder.Services.AddScoped<IPropertyService, PropertyService>();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
-
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddHttpContextAccessor();
             var app = builder.Build();
             await DbInitializer.Seed(app);
             // Configure the HTTP request pipeline.

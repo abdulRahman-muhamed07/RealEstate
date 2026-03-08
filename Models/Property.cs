@@ -36,7 +36,7 @@ namespace RealEstate.Models
 
         public ApplicationUser Owner { get; set; }
         public Category Category { get; set; }
-
+        public City City { get; set; }  
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     }
