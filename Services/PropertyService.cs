@@ -129,12 +129,38 @@ namespace RealEstate.Services
         [AllowAnonymous]
         public async Task<IActionResult> GetPropertyByIdAsync(int id)
         {
-            var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(
-                p => p.Id == id && p.IsApproved,
-                includeProperties: "Category,City"
-            );
+                        var property = await _unitOfWork.Property.Query(
+                    p => p.Id == id && p.IsApproved,
+                    includeProperties: "Category,City,Owner"
+                )
+                .Select(p => new {
+                    p.Id,
+                    p.Title,
+                    p.Status,
+                    p.Description,
+                    p.Price,
+                    p.Area,
+                    p.ImageUrl,
+                    p.IsForRent,
+                    p.Bedrooms,
+                    p.Bathrooms,
+                    p.CreatedAt,
+                    Owner = new
+                    {
+                        p.Owner.Id,
+                        p.Owner.FirstName,
+                        p.Owner.LastName,
+                        p.Owner.Email,
+                        p.Owner.PhoneNumber
+                    },
+                    Category = new { p.Category.Id, p.Category.Name },
+                    City = new { p.City.Id, p.City.Name }
+                })
+                .FirstOrDefaultAsync();
 
-            if (property == null) return NotFound("Property not found or not approved.");
+            if (property == null)
+                return NotFound("Property not found or not approved.");
+
             return Ok(property);
         }
 

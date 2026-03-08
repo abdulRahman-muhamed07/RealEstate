@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RealEstate.DTOs.Request;
 using RealEstate.Services;
 
@@ -13,6 +14,10 @@ namespace RealEstate.Controllers
 
         [HttpGet("all")]
         public async Task<IActionResult> GetAll([FromQuery] PropertyFilterDto filter) => await _service.GetFilteredPropertiesAsync(filter);
+
+        [HttpGet("GetById/{id}")]
+        [AllowAnonymous] 
+        public async Task<IActionResult> GetById(int id) => await _service.GetPropertyByIdAsync(id);
 
         [HttpPost("add")]
         public async Task<IActionResult> Add([FromForm] PropertyCreateDto dto) => await _service.AddPropertyAsync(dto);
