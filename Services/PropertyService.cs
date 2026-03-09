@@ -166,7 +166,7 @@ namespace RealEstate.Services
 
         /// <summary> ------ Add a new property and upload image ------ </summary>
         [Authorize]
-        public async Task<IActionResult> AddPropertyAsync(PropertyCreateDto dto)
+        public async Task<IActionResult> AddPropertyAsync([FromForm] PropertyCreateDto dto)
         {
             var userId = GetCurrentUserId();
             if (dto.ImageFile != null && !IsValidImage(dto.ImageFile))
@@ -201,7 +201,7 @@ namespace RealEstate.Services
 
             _unitOfWork.Property.Add(property);
             await _unitOfWork.SaveAsync();
-            return Ok(new { message = "Property submitted successfully and waiting for approval." });
+            return Ok(new { message = "Property submitted successfully and waiting for approval" });
         }
 
         /// <summary> ------ Update property details and reset approval (Owner Only) ------ </summary>
@@ -274,7 +274,6 @@ namespace RealEstate.Services
             }
             catch (Exception ex)
             {
-                // تسجيل الخطأ (Logging) لو عندك Logger
                 return StatusCode(500, new { message = "حصلت مشكلة وأحنا بنمسح العقار.", error = ex.Message });
             }
         }

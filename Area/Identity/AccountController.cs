@@ -25,14 +25,14 @@ public class AccountController : ControllerBase
         if (!result.Succeeded) return BadRequest(result.Errors);
 
         await _signInManager.SignInAsync(user, isPersistent: false);
-        return Ok(new { message = "تم التسجيل بنجاح" });
+        return Ok(new { message = " User Created Succeffuly " });
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _signInManager.PasswordSignInAsync(dto.Email, dto.Password, dto.RememberMe, false);
-        if (result.Succeeded) return Ok(new { message = "نورت يا هندسة" });
-        return Unauthorized("بيانات غلط");
+        if (result.Succeeded) return Ok(new { message = " Welcome To the RealEstate Site " });
+        return Unauthorized("");
     }
 }
