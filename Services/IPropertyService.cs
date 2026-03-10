@@ -11,7 +11,7 @@ namespace RealEstate.Services
         Task<IActionResult> GetPropertyByIdAsync(int id);
         Task<IActionResult> AddPropertyAsync(PropertyCreateDto dto);
         Task<IActionResult> UpdatePropertyAsync(int id, PropertyCreateDto dto);
-        Task<IActionResult> DeletePropertyAsync(int id);
+        Task<IActionResult> DeletePropertyAsync(int id, System.Security.Claims.ClaimsPrincipal user);
 
         // Admin Operations
         Task<IActionResult> GetPendingRequestsAsync();

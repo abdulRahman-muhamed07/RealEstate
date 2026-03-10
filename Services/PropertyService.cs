@@ -42,11 +42,32 @@ namespace RealEstate.Services
         }
 
         // ------ Physical file deletion from server ------
+        //private void DeleteImageFile(string fileName)
+        //{
+        //    if (string.IsNullOrEmpty(fileName)) return;
+        //    var path = Path.Combine(_webHostEnvironment.WebRootPath, "images/properties", fileName);
+        //    if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+        //}
+
         private void DeleteImageFile(string fileName)
         {
             if (string.IsNullOrEmpty(fileName)) return;
-            var path = Path.Combine(_webHostEnvironment.WebRootPath, "images/properties", fileName);
-            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+
+            try
+            {
+                string cleanFileName = Path.GetFileName(fileName);
+
+                var path = Path.Combine(_webHostEnvironment.WebRootPath, "images", "properties", cleanFileName);
+
+                if (System.IO.File.Exists(path))
+                {
+                    System.IO.File.Delete(path);
+                }
+            }
+            catch (Exception)
+            {
+                
+            }
         }
         #endregion
 
@@ -249,41 +270,41 @@ namespace RealEstate.Services
         }
 
         /// <summary> ------ Delete property and its image (Owner or Admin) ------ </summary>
-        [Authorize]
-        public async Task<IActionResult> DeletePropertyAsync(int id)
+        public async Task<IActionResult> DeletePropertyAsync(int id, ClaimsPrincipal user)
         {
             try
             {
-                // 
-                var userId = GetCurrentUserId();
-                var user = _httpContextAccessor.HttpContext?.User;
-                var isAdmin = user?.IsInRole("Admin") ?? false;
-
-                //
+                // Get property from DB
                 var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
 
                 if (property == null)
-                    return NotFound(new { message = "العقار غير موجود بالفعل." });
+                    return new NotFoundObjectResult(new { message = "العقار غير موجود بالفعل." });
 
-               
+                // Identity check
+                var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+                var isAdmin = user.IsInRole("Admin");
+
+                // Authorization check
                 if (property.OwnerId != userId && !isAdmin)
-                    return Forbid();
+                    return new ForbidResult();
 
-                //delete the img if its exist
-                if (!string.IsNullOrEmpty(property.ImageUrl))
-                {
-                    DeleteImageFile(property.ImageUrl);
-                }
+                var imageToDelete = property.ImageUrl;
 
-                //delete fom database
+                // Delete from Database
                 _unitOfWork.Property.Remove(property);
                 await _unitOfWork.SaveAsync();
 
-                return Ok(new { message = "تم حذف العقار بنجاح." });
+                // Physical file deletion
+                if (!string.IsNullOrEmpty(imageToDelete))
+                {
+                    DeleteImageFile(imageToDelete);
+                }
+
+                return new OkObjectResult(new { message = "تم حذف العقار وصورته بنجاح." });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "حصلت مشكلة وأحنا بنمسح العقار.", error = ex.Message });
+                return new ObjectResult(new { message = "Error occurred.", error = ex.Message }) { StatusCode = 500 };
             }
         }
 

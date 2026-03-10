@@ -30,7 +30,7 @@ namespace RealEstate.Controllers
         [HttpDelete("delete/{id}")]
         [Authorize]
         public async Task<IActionResult> Delete(int id)
-            => await _service.DeletePropertyAsync(id);
+            => await _service.DeletePropertyAsync(id, User); 
 
         [HttpGet("pending")]
         [Authorize(Roles = "Admin")]
