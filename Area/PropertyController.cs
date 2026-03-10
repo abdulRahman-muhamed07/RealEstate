@@ -22,6 +22,16 @@ namespace RealEstate.Controllers
         [HttpPost("add")]
         public async Task<IActionResult> Add([FromForm] PropertyCreateDto dto) => await _service.AddPropertyAsync(dto);
 
+        [HttpPut("update/{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(int id, [FromForm] PropertyCreateDto dto)
+        => await _service.UpdatePropertyAsync(id, dto);
+
+        [HttpDelete("delete/{id}")]
+        [Authorize]
+        public async Task<IActionResult> Delete(int id)
+            => await _service.DeletePropertyAsync(id);
+
         [HttpGet("pending")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPending() => await _service.GetPendingRequestsAsync();

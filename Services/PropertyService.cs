@@ -204,22 +204,29 @@ namespace RealEstate.Services
             return Ok(new { message = "Property submitted successfully and waiting for approval" });
         }
 
-        /// <summary> ------ Update property details and reset approval (Owner Only) ------ </summary>
+        /// <summary> ------ update property ------ </summary>
         [Authorize]
-        public async Task<IActionResult> UpdatePropertyAsync(int id, PropertyCreateDto dto)
+        public async Task<IActionResult> UpdatePropertyAsync(int id, [FromForm] PropertyCreateDto dto)
         {
             var userId = GetCurrentUserId();
+
             var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id && p.OwnerId == userId);
 
-            if (property == null) return NotFound("Property not found or access denied.");
+            if (property == null)
+                return NotFound(new { message = "عفواً، العقار غير موجود أو ليس لديك صلاحية لتعديله." });
 
             if (dto.ImageFile != null)
             {
-                if (!IsValidImage(dto.ImageFile)) return BadRequest("Invalid image format.");
+                if (!IsValidImage(dto.ImageFile))
+                    return BadRequest("صيغة الصورة غير مدعومة (JPG, PNG, WebP فقط).");
+
                 DeleteImageFile(property.ImageUrl);
 
                 string fileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.ImageFile.FileName);
                 string uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "images/properties");
+
+                if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+
                 using var stream = new FileStream(Path.Combine(uploadPath, fileName), FileMode.Create);
                 await dto.ImageFile.CopyToAsync(stream);
                 property.ImageUrl = fileName;
@@ -233,10 +240,12 @@ namespace RealEstate.Services
             property.CategoryId = dto.CategoryId;
             property.CityId = dto.CityId;
             property.Status = dto.Status;
-            property.IsApproved = false; // Must be re-approved after edit
+
+            property.IsApproved = false;
 
             await _unitOfWork.SaveAsync();
-            return Ok(new { message = "Property updated and pending re-approval." });
+
+            return Ok(new { message = "تم تحديث البيانات بنجاح، وفي انتظار مراجعة الإدارة." });
         }
 
         /// <summary> ------ Delete property and its image (Owner or Admin) ------ </summary>
