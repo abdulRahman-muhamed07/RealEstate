@@ -321,16 +321,15 @@ namespace RealEstate.Services
         }
 
         /// <summary> ------ Approve/Reject or Change property status (Admin) ------ </summary>
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateStatusAsync(int id, bool approve, PropertyStatus? newStatus = null)
+        public async Task<IActionResult> UpdateStatusAsync(int id, UpdateStatusDto dto)
         {
             var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
             if (property == null) return NotFound("Request not found.");
 
-            if (approve)
+            if (dto.Approve)
             {
                 property.IsApproved = true;
-                if (newStatus.HasValue) property.Status = newStatus.Value;
+                if (dto.NewStatus.HasValue) property.Status = dto.NewStatus.Value;
             }
             else
             {
@@ -339,7 +338,7 @@ namespace RealEstate.Services
             }
 
             await _unitOfWork.SaveAsync();
-            return Ok(new { message = approve ? "Property approved." : "Property rejected and deleted." });
+            return Ok(new { message = dto.Approve ? "Property approved." : "Property rejected and deleted." });
         }
 
         #endregion

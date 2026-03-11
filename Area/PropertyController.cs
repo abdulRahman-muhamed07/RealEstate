@@ -38,7 +38,8 @@ namespace RealEstate.Controllers
 
         [HttpPost("approve/{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Approve(int id) => await _service.UpdateStatusAsync(id, true);
+        public async Task<IActionResult> Approve(int id, [FromBody] UpdateStatusDto dto)
+    => await _service.UpdateStatusAsync(id, dto);
 
         [HttpDelete("reject/{id}")]
         [Authorize(Roles = "Admin,User")]

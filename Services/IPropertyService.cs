@@ -15,8 +15,7 @@ namespace RealEstate.Services
 
         // Admin Operations
         Task<IActionResult> GetPendingRequestsAsync();
-        Task<IActionResult> UpdateStatusAsync(int id, bool approve, Property.PropertyStatus? newStatus = null);
-
+        Task<IActionResult> UpdateStatusAsync(int id, UpdateStatusDto dto); 
         // User Specific
         Task<IActionResult> GetUserPropertiesAsync(string? userId = null);
         Task<IActionResult> ToggleFavoriteAsync(string? userId, int propertyId);
