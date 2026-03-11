@@ -321,15 +321,26 @@ namespace RealEstate.Services
         }
 
         /// <summary> ------ Approve/Reject or Change property status (Admin) ------ </summary>
+
         public async Task<IActionResult> UpdateStatusAsync(int id, UpdateStatusDto dto)
         {
             var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
-            if (property == null) return NotFound("Request not found.");
+            if (property == null) return NotFound("العقار مش موجود.");
 
             if (dto.Approve)
             {
                 property.IsApproved = true;
-                if (dto.NewStatus.HasValue) property.Status = dto.NewStatus.Value;
+
+                if (dto.NewStatus.HasValue)
+                {
+                    property.Status = dto.NewStatus.Value;
+
+                    property.IsForRent = (dto.NewStatus == Property.PropertyStatus.Rent);
+                }
+                else
+                {
+                    return BadRequest("لازم تحدد القسم (Sale أو Rent) عند الموافقة.");
+                }
             }
             else
             {
@@ -338,7 +349,7 @@ namespace RealEstate.Services
             }
 
             await _unitOfWork.SaveAsync();
-            return Ok(new { message = dto.Approve ? "Property approved." : "Property rejected and deleted." });
+            return Ok(new { message = dto.Approve ? $"تمت الموافقة وتصنيف العقار كـ {dto.NewStatus}" : "تم رفض العقار وحذفه" });
         }
 
         #endregion

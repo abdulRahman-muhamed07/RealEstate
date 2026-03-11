@@ -9,8 +9,9 @@ namespace RealEstate.Models
 
         public enum PropertyStatus
         {
-            Sale = 0,
-            Rent = 1
+            Pending = 0,
+            Sale = 1,
+            Rent = 2
         }
         public PropertyStatus Status { get; set; }
         public string Description { get; set; }

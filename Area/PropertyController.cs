@@ -24,13 +24,13 @@ namespace RealEstate.Controllers
 
         [HttpPut("update/{id}")]
         [Authorize]
-        public async Task<IActionResult> Update(int id, [FromForm] PropertyCreateDto dto)
-        => await _service.UpdatePropertyAsync(id, dto);
+        public async Task<IActionResult> Update(int id, [FromForm] PropertyCreateDto dto) => await _service.UpdatePropertyAsync(id, dto);
+
 
         [HttpDelete("delete/{id}")]
         [Authorize]
-        public async Task<IActionResult> Delete(int id)
-            => await _service.DeletePropertyAsync(id, User); 
+        public async Task<IActionResult> Delete(int id) => await _service.DeletePropertyAsync(id, User);
+
 
         [HttpGet("pending")]
         [Authorize(Roles = "Admin")]
@@ -38,11 +38,10 @@ namespace RealEstate.Controllers
 
         [HttpPost("approve/{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Approve(int id, [FromBody] UpdateStatusDto dto)
-    => await _service.UpdateStatusAsync(id, dto);
+        public async Task<IActionResult> Approve(int id, [FromBody] UpdateStatusDto dto) => await _service.UpdateStatusAsync(id, dto);
 
-        [HttpDelete("reject/{id}")]
-        [Authorize(Roles = "Admin,User")]
-        public async Task<IActionResult> Reject(int id) => await _service.UpdateStatusAsync(id, false);
+
+
+
     }
 }
