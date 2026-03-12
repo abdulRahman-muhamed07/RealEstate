@@ -40,7 +40,26 @@ namespace RealEstate.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Approve(int id, [FromBody] UpdateStatusDto dto) => await _service.UpdateStatusAsync(id, dto);
 
+        [HttpGet("mylist")]
+        [Authorize]
+        public async Task<IActionResult> GetMyProperties([FromQuery] string? userId = null)
+        {
+            return await _service.GetUserPropertiesAsync(userId);
+        }
 
+        [HttpPost("favorites/{propertyId}")]
+        [Authorize]
+        public async Task<IActionResult> ToggleFavorite(int propertyId, [FromQuery] string? userId = null)
+        {
+            return await _service.ToggleFavoriteAsync(userId, propertyId);
+        }
+
+        [HttpGet("myfavorites")]
+        [Authorize]
+        public async Task<IActionResult> GetFavorites([FromQuery] string? userId = null)
+        {
+            return await _service.GetUserFavoritesAsync(userId);
+        }
 
 
     }

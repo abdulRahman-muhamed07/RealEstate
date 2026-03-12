@@ -363,10 +363,13 @@ namespace RealEstate.Services
             var id = userId ?? GetCurrentUserId();
             if (string.IsNullOrEmpty(id)) return Unauthorized();
 
-            var properties = await _unitOfWork.Property.Query(p => p.OwnerId == id).ToListAsync();
+            var properties = await _unitOfWork.Property.Query(
+                p => p.OwnerId == id,
+                includeProperties: "Category,City"
+            ).ToListAsync();
+
             return Ok(properties);
         }
-
         /// <summary> ------ Toggle property in user favorites ------ </summary>
         [Authorize]
         public async Task<IActionResult> ToggleFavoriteAsync(string? userId, int propertyId)
