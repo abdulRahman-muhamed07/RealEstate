@@ -500,19 +500,36 @@ namespace RealEstate.Services
         }
 
         /// <summary> ------ Get list of user's favorite properties ------ </summary>
+        /// <summary> ------ Get list of user's favorite properties ------ </summary>
         [Authorize]
-        public async Task<IActionResult> GetUserFavoritesAsync(string? userId)
+        public async Task<IActionResult> GetUserFavoritesAsync(string? userId = null)
         {
-            var id = userId ?? GetCurrentUserId();
-            if (string.IsNullOrEmpty(id)) return Unauthorized();
+            try
+            {
+                var id = userId ?? GetCurrentUserId();
+                if (string.IsNullOrEmpty(id)) return Unauthorized();
 
-            var favs = await _unitOfWork.Favorite.Query(f => f.UserId == id, includeProperties: "Property").ToListAsync();
+                var favoriteProperties = await _unitOfWork.Favorite.Query(
+                    f => f.UserId == id,
+                    includeProperties: "Property,Property.Category,Property.City"
+                )
+                .Select(f => new {
+                    f.Property.Id,
+                    f.Property.Title,
+                    f.Property.Price,
+                    f.Property.ImageUrl,
+                    f.Property.Status,
+                    CategoryName = f.Property.Category.Name,
+                    CityName = f.Property.City.Name,
+                })
+                .ToListAsync();
 
-            var result = favs.Where(f => f.Property != null)
-                             .Select(f => f.Property)
-                             .ToList();
-
-            return Ok(result);
+                return Ok(favoriteProperties);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "حدث خطأ أثناء جلب قائمة المفضلة." });
+            }
         }
 
         #endregion
