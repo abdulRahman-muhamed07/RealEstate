@@ -269,6 +269,7 @@ namespace RealEstate.Services
             return Ok(new { message = "تم تحديث البيانات بنجاح، وفي انتظار مراجعة الإدارة." });
         }
 
+        [Authorize]
         /// <summary> ------ Delete property and its image (Owner or Admin) ------ </summary>
         public async Task<IActionResult> DeletePropertyAsync(int id, ClaimsPrincipal user)
         {
@@ -316,11 +317,15 @@ namespace RealEstate.Services
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPendingRequestsAsync()
         {
-            var pending = await _unitOfWork.Property.Query(p => !p.IsApproved).ToListAsync();
+            var pending = await _unitOfWork.Property
+                .Query(p => p.Status == 0)
+                .ToListAsync();
+
             return Ok(pending);
         }
 
         /// <summary> ------ Approve/Reject or Change property status (Admin) ------ </summary>
+        [Authorize(Roles = "Admin")]
 
         public async Task<IActionResult> UpdateStatusAsync(int id, UpdateStatusDto dto)
         {
