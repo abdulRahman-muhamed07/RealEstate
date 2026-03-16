@@ -386,16 +386,25 @@ namespace RealEstate.Services
         public async Task<IActionResult> ToggleFavoriteAsync(string? userId, int propertyId)
         {
             var id = userId ?? GetCurrentUserId();
-            if (string.IsNullOrEmpty(id)) return Unauthorized();
+            if (string.IsNullOrEmpty(id)) return new UnauthorizedResult();
 
             var fav = await _unitOfWork.Favorite.GetFirstOrDefaultAsync(f => f.UserId == id && f.PropertyId == propertyId);
+
+            string message;
             if (fav != null)
+            {
                 _unitOfWork.Favorite.Remove(fav);
+                message = "تمت إزالة العقار من المفضلة بنجاح";
+            }
             else
+            {
                 _unitOfWork.Favorite.Add(new Favorite { UserId = id, PropertyId = propertyId });
+                message = "تم إضافة العقار إلى المفضلة بنجاح";
+            }
 
             await _unitOfWork.SaveAsync();
-            return Ok();
+
+            return new OkObjectResult(new { message });
         }
 
         /// <summary> ------ Get list of user's favorite properties ------ </summary>
