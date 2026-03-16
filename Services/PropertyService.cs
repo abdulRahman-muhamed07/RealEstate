@@ -427,15 +427,36 @@ namespace RealEstate.Services
         [Authorize]
         public async Task<IActionResult> GetUserPropertiesAsync(string? userId = null)
         {
-            var id = userId ?? GetCurrentUserId();
-            if (string.IsNullOrEmpty(id)) return Unauthorized();
+            try
+            {
+                // لو الأدمن باعت ID نجيب عقارات يوزر معين، لو لا نجيب عقارات اليوزر اللي عامل Login
+                var id = userId ?? GetCurrentUserId();
+                if (string.IsNullOrEmpty(id)) return Unauthorized();
 
-            var properties = await _unitOfWork.Property.Query(
-                p => p.OwnerId == id,
-                includeProperties: "Category,City"
-            ).ToListAsync();
+                var properties = await _unitOfWork.Property.Query(
+                    p => p.OwnerId == id,
+                    includeProperties: "Category,City"
+                )
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new {
+                    p.Id,
+                    p.Title,
+                    p.Price,
+                    p.ImageUrl,
+                    p.Status,
+                    p.IsApproved,
+                    p.CreatedAt,
+                    CategoryName = p.Category.Name,
+                    CityName = p.City.Name
+                })
+                .ToListAsync();
 
-            return Ok(properties);
+                return Ok(properties);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "حدث خطأ أثناء جلب العقارات الخاصة بك." });
+            }
         }
         /// <summary> ------ Toggle property in user favorites ------ </summary>
         [Authorize]
