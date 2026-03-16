@@ -352,12 +352,29 @@ namespace RealEstate.Services
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPendingRequestsAsync()
         {
-            var pending = await _unitOfWork.Property
-                .Query(p => p.Status == 0)
-                .ToListAsync();
+            try
+            {
+                var pendingProperties = await _unitOfWork.Property
+                    .Query(p => p.Status == PropertyStatus.Pending)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Select(p => new {
+                        p.Id,
+                        p.Title,
+                        p.Price,
+                        p.CreatedAt,
+                        p.OwnerId,
+                        Category = p.Category.Name,
+                        City = p.City.Name
+                    })
+                    .ToListAsync();
 
-            return Ok(pending);
-        }
+                return Ok(pendingProperties);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "حدث خطأ أثناء جلب طلبات المراجعة." });
+            }
+        }}
 
         /// <summary> ------ Approve/Reject or Change property status (Admin) ------ </summary>
         [Authorize(Roles = "Admin")]
