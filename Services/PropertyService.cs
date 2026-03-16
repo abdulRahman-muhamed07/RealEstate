@@ -374,42 +374,49 @@ namespace RealEstate.Services
             {
                 return StatusCode(500, new { message = "حدث خطأ أثناء جلب طلبات المراجعة." });
             }
-        }}
+        }
 
         /// <summary> ------ Approve/Reject or Change property status (Admin) ------ </summary>
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateStatusAsync(int id, UpdateStatusDto dto)
         {
-            var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
-            if (property == null) return NotFound("العقار مش موجود.");
-
-            if (dto.Approve)
+            try
             {
-                property.IsApproved = true;
+                var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
+                if (property == null)
+                    return NotFound(new { message = "العقار مش موجود." });
 
-                if (dto.NewStatus.HasValue)
+                if (dto.Approve)
                 {
-                    property.Status = dto.NewStatus.Value;
+                    if (!dto.NewStatus.HasValue || dto.NewStatus == PropertyStatus.Pending)
+                        return BadRequest(new { message = "لازم تحدد القسم (بيع أو إيجار) عند الموافقة." });
 
-                    property.IsForRent = (dto.NewStatus == Property.PropertyStatus.Rent);
+                    property.IsApproved = true;
+                    property.Status = dto.NewStatus.Value;
+                    property.IsForRent = (dto.NewStatus == PropertyStatus.Rent);
                 }
                 else
                 {
-                    return BadRequest("لازم تحدد القسم (بيع أو إيجار) عند الموافقة.");
+                    if (!string.IsNullOrEmpty(property.ImageUrl) && property.ImageUrl != "default-property.png")
+                    {
+                        DeleteImageFile(property.ImageUrl);
+                    }
+                    _unitOfWork.Property.Remove(property);
                 }
+
+                await _unitOfWork.SaveAsync();
+
+                var statusText = dto.NewStatus == PropertyStatus.Rent ? "إيجار" : "بيع";
+                var message = dto.Approve
+                    ? $"تمت الموافقة وتصنيف العقار كـ {statusText}"
+                    : "تم رفض العقار وحذفه بنجاح";
+
+                return Ok(new { message });
             }
-            else
+            catch (Exception)
             {
-                DeleteImageFile(property.ImageUrl);
-                _unitOfWork.Property.Remove(property);
+                return StatusCode(500, new { message = "حدث خطأ أثناء معالجة الطلب." });
             }
-
-            await _unitOfWork.SaveAsync();
-
-            // هنا حددنا النص العربي بناءً على الحالة
-            var statusText = dto.NewStatus == Property.PropertyStatus.Rent ? "إيجار" : "بيع";
-
-            return Ok(new { message = dto.Approve ? $"تمت الموافقة وتصنيف العقار كـ {statusText}" : "تم رفض العقار وحذفه بنجاح" });
         }
 
         #endregion
