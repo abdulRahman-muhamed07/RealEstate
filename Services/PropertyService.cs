@@ -315,37 +315,32 @@ namespace RealEstate.Services
         {
             try
             {
-                // Get property from DB
                 var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
 
                 if (property == null)
-                    return new NotFoundObjectResult(new { message = ".العقار غير موجود بالفعل" });
+                    return new NotFoundObjectResult(new { message = "العقار غير موجود بالفعل." });
 
-                // Identity check
                 var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
                 var isAdmin = user.IsInRole("Admin");
 
-                // Authorization check
                 if (property.OwnerId != userId && !isAdmin)
                     return new ForbidResult();
 
                 var imageToDelete = property.ImageUrl;
 
-                // Delete from Database
                 _unitOfWork.Property.Remove(property);
                 await _unitOfWork.SaveAsync();
 
-                // Physical file deletion
-                if (!string.IsNullOrEmpty(imageToDelete))
+                if (!string.IsNullOrEmpty(imageToDelete) && imageToDelete != "default-property.png")
                 {
                     DeleteImageFile(imageToDelete);
                 }
 
                 return new OkObjectResult(new { message = "تم حذف العقار وصورته بنجاح." });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return new ObjectResult(new { message = "Error occurred.", error = ex.Message }) { StatusCode = 500 };
+                return new ObjectResult(new { message = "حدث خطأ غير متوقع أثناء الحذف." }) { StatusCode = 500 };
             }
         }
 
