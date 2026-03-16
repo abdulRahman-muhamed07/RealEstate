@@ -185,13 +185,14 @@ namespace RealEstate.Services
             return Ok(property);
         }
 
-        /// <summary> ------ Add a new property and upload image ------ </summary>
         [Authorize]
         public async Task<IActionResult> AddPropertyAsync([FromForm] PropertyCreateDto dto)
         {
             var userId = GetCurrentUserId();
+
+            // تعديل رسالة خطأ الصورة
             if (dto.ImageFile != null && !IsValidImage(dto.ImageFile))
-                return BadRequest("Invalid image format. Use JPG, PNG, or WebP.");
+                return BadRequest("صيغة الصورة غير صالحة. يرجى استخدام JPG أو PNG أو WebP.");
 
             string fileName = null;
             if (dto.ImageFile != null)
@@ -222,7 +223,9 @@ namespace RealEstate.Services
 
             _unitOfWork.Property.Add(property);
             await _unitOfWork.SaveAsync();
-            return Ok(new { message = "Property submitted successfully and waiting for approval" });
+
+            // تعديل رسالة النجاح
+            return Ok(new { message = "تم إضافة العقار بنجاح، وهو الآن في انتظار موافقة المسؤول." });
         }
 
         /// <summary> ------ update property ------ </summary>
@@ -326,7 +329,6 @@ namespace RealEstate.Services
 
         /// <summary> ------ Approve/Reject or Change property status (Admin) ------ </summary>
         [Authorize(Roles = "Admin")]
-
         public async Task<IActionResult> UpdateStatusAsync(int id, UpdateStatusDto dto)
         {
             var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
@@ -344,7 +346,7 @@ namespace RealEstate.Services
                 }
                 else
                 {
-                    return BadRequest("لازم تحدد القسم (Sale أو Rent) عند الموافقة.");
+                    return BadRequest("لازم تحدد القسم (بيع أو إيجار) عند الموافقة.");
                 }
             }
             else
@@ -354,7 +356,11 @@ namespace RealEstate.Services
             }
 
             await _unitOfWork.SaveAsync();
-            return Ok(new { message = dto.Approve ? $"تمت الموافقة وتصنيف العقار كـ {dto.NewStatus}" : "تم رفض العقار وحذفه" });
+
+            // هنا حددنا النص العربي بناءً على الحالة
+            var statusText = dto.NewStatus == Property.PropertyStatus.Rent ? "إيجار" : "بيع";
+
+            return Ok(new { message = dto.Approve ? $"تمت الموافقة وتصنيف العقار كـ {statusText}" : "تم رفض العقار وحذفه بنجاح" });
         }
 
         #endregion
