@@ -460,28 +460,43 @@ namespace RealEstate.Services
         }
         /// <summary> ------ Toggle property in user favorites ------ </summary>
         [Authorize]
-        public async Task<IActionResult> ToggleFavoriteAsync(string? userId, int propertyId)
+        public async Task<IActionResult> ToggleFavoriteAsync(int propertyId, string? userId = null)
         {
-            var id = userId ?? GetCurrentUserId();
-            if (string.IsNullOrEmpty(id)) return new UnauthorizedResult();
-
-            var fav = await _unitOfWork.Favorite.GetFirstOrDefaultAsync(f => f.UserId == id && f.PropertyId == propertyId);
-
-            string message;
-            if (fav != null)
+            try
             {
-                _unitOfWork.Favorite.Remove(fav);
-                message = "تمت إزالة العقار من المفضلة بنجاح";
+                var id = userId ?? GetCurrentUserId();
+                if (string.IsNullOrEmpty(id)) return Unauthorized();
+
+                var propertyExists = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == propertyId);
+                if (propertyExists == null)
+                    return NotFound(new { message = "العقار ده مش موجود عشان تضيفه للمفضلة." });
+
+                var fav = await _unitOfWork.Favorite.GetFirstOrDefaultAsync(f => f.UserId == id && f.PropertyId == propertyId);
+
+                string message;
+                if (fav != null)
+                {
+                    _unitOfWork.Favorite.Remove(fav);
+                    message = "تمت إزالة العقار من المفضلة بنجاح";
+                }
+                else
+                {
+                    _unitOfWork.Favorite.Add(new Favorite
+                    {
+                        UserId = id,
+                        PropertyId = propertyId,
+                    });
+                    message = "تم إضافة العقار إلى المفضلة بنجاح";
+                }
+
+                await _unitOfWork.SaveAsync();
+
+                return Ok(new { message });
             }
-            else
+            catch (Exception)
             {
-                _unitOfWork.Favorite.Add(new Favorite { UserId = id, PropertyId = propertyId });
-                message = "تم إضافة العقار إلى المفضلة بنجاح";
+                return StatusCode(500, new { message = "حدث خطأ أثناء تحديث المفضلة." });
             }
-
-            await _unitOfWork.SaveAsync();
-
-            return new OkObjectResult(new { message });
         }
 
         /// <summary> ------ Get list of user's favorite properties ------ </summary>
