@@ -415,7 +415,12 @@ namespace RealEstate.Services
             if (string.IsNullOrEmpty(id)) return Unauthorized();
 
             var favs = await _unitOfWork.Favorite.Query(f => f.UserId == id, includeProperties: "Property").ToListAsync();
-            return Ok(favs.Select(f => f.Property));
+
+            var result = favs.Where(f => f.Property != null)
+                             .Select(f => f.Property)
+                             .ToList();
+
+            return Ok(result);
         }
 
         #endregion
