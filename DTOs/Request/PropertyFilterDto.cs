@@ -5,10 +5,10 @@ namespace RealEstate.DTOs.Request
     public class PropertyFilterDto
     {
 
-        public PropertyStatus Status { get; set; }
+        public PropertyStatus? Status { get; set; }
         public List<int>? CategoryIds { get; set; }
         public decimal? MaxPrice { get; set; }
-
+        public decimal? MinPrice { get; set; }
         // -------- Dropdown list for the city filters  -------- 
         public int? CityId { get; set; }
 

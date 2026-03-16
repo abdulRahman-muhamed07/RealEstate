@@ -78,34 +78,43 @@ namespace RealEstate.Services
         public async Task<IActionResult> GetFilteredPropertiesAsync(PropertyFilterDto filter)
         {
             var query = _unitOfWork.Property.Query(
-                p => p.IsApproved && p.Status == filter.Status,
+                p => p.IsApproved,
                 includeProperties: "Category,City,Owner"
             );
 
-            // --- الـ Filtering ---
+            if (filter.Status.HasValue)
+            {
+                query = query.Where(p => p.Status == filter.Status.Value);
+            }
+
             if (filter.CityId.HasValue && filter.CityId > 0)
                 query = query.Where(p => p.CityId == filter.CityId);
 
-            if (filter.CategoryIds?.Any() == true)
+            if (filter.CategoryIds != null && filter.CategoryIds.Any())
                 query = query.Where(p => filter.CategoryIds.Contains(p.CategoryId));
 
             if (filter.MaxPrice.HasValue && filter.MaxPrice > 0)
                 query = query.Where(p => p.Price <= filter.MaxPrice.Value);
 
-            // --- الـ Sorting ---
-            query = filter.SortBy?.ToLower() switch
+            if (filter.MinPrice.HasValue && filter.MinPrice > 0)
+                query = query.Where(p => p.Price >= filter.MinPrice.Value);
+
+            query = (filter.SortBy?.ToLower()) switch
             {
                 "price_asc" => query.OrderBy(p => p.Price),
                 "price_desc" => query.OrderByDescending(p => p.Price),
                 "newest" => query.OrderByDescending(p => p.CreatedAt),
-                _ => query.OrderByDescending(p => p.CreatedAt)
+                _ => query.OrderByDescending(p => p.Id)
             };
 
             var totalCount = await query.CountAsync();
 
+            var page = filter.Page <= 0 ? 1 : filter.Page;
+            var pageSize = filter.PageSize <= 0 ? 10 : filter.PageSize;
+
             var data = await query
-                .Skip((filter.Page - 1) * filter.PageSize)
-                .Take(filter.PageSize)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(p => new
                 {
                     p.Id,
@@ -114,7 +123,9 @@ namespace RealEstate.Services
                     p.Description,
                     p.Price,
                     p.Area,
-                    ImageUrl = p.ImageUrl,
+                    ImageUrl = (p.ImageUrl != null && (p.ImageUrl.StartsWith("http") || p.ImageUrl.StartsWith("data:")))
+                               ? p.ImageUrl
+                               : $"/images/properties/{p.ImageUrl}",
                     p.IsForRent,
                     p.IsApproved,
                     p.CreatedAt,
@@ -123,34 +134,34 @@ namespace RealEstate.Services
                     p.CategoryId,
                     p.CityId,
                     p.OwnerId,
-                    Owner = new
+                    Owner = p.Owner != null ? new
                     {
                         p.Owner.Id,
                         p.Owner.FirstName,
                         p.Owner.LastName,
-                        p.Owner.IsCompany,
-                    },
-                    Category = new
+                        p.Owner.IsCompany
+                    } : null,
+                    Category = p.Category != null ? new
                     {
                         p.Category.Id,
                         p.Category.Name
-                    },
-                    City = new
+                    } : null,
+                    City = p.City != null ? new
                     {
                         p.City.Id,
                         p.City.Name
-                    }
+                    } : null
                 })
                 .ToListAsync();
 
-            return Ok(new { totalCount, data });
+            return Ok(new { totalCount, page, pageSize, data });
         }
 
         /// <summary> ------ Get detailed info for a single approved property ------ </summary>
         [AllowAnonymous]
         public async Task<IActionResult> GetPropertyByIdAsync(int id)
         {
-                        var property = await _unitOfWork.Property.Query(
+            var property = await _unitOfWork.Property.Query(
                     p => p.Id == id && p.IsApproved,
                     includeProperties: "Category,City,Owner"
                 )
@@ -161,71 +172,87 @@ namespace RealEstate.Services
                     p.Description,
                     p.Price,
                     p.Area,
-                    p.ImageUrl,
+                    ImageUrl = (p.ImageUrl != null && (p.ImageUrl.StartsWith("http") || p.ImageUrl.StartsWith("data:")))
+                               ? p.ImageUrl
+                               : $"/images/properties/{p.ImageUrl}",
                     p.IsForRent,
                     p.Bedrooms,
                     p.Bathrooms,
                     p.CreatedAt,
-                    Owner = new
+                    Owner = p.Owner != null ? new
                     {
                         p.Owner.Id,
                         p.Owner.FirstName,
                         p.Owner.LastName,
                         p.Owner.Email,
                         p.Owner.PhoneNumber
-                    },
-                    Category = new { p.Category.Id, p.Category.Name },
-                    City = new { p.City.Id, p.City.Name }
+                    } : null,
+                    Category = p.Category != null ? new { p.Category.Id, p.Category.Name } : null,
+                    City = p.City != null ? new { p.City.Id, p.City.Name } : null
                 })
                 .FirstOrDefaultAsync();
 
             if (property == null)
-                return NotFound("Property not found or not approved.");
+                return NotFound(new { message = "Property not found or not approved." });
 
             return Ok(property);
         }
 
         [Authorize]
-        public async Task<IActionResult> AddPropertyAsync([FromForm] PropertyCreateDto dto)
+        public async Task<IActionResult> AddPropertyAsync([FromForm] PropertyAddDto dto)
         {
             var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            // تعديل رسالة خطأ الصورة
             if (dto.ImageFile != null && !IsValidImage(dto.ImageFile))
-                return BadRequest("صيغة الصورة غير صالحة. يرجى استخدام JPG أو PNG أو WebP.");
+                return BadRequest(new { message = "صيغة الصورة غير صالحة. يرجى استخدام JPG أو PNG أو WebP." });
 
-            string fileName = null;
-            if (dto.ImageFile != null)
+            try
             {
-                fileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.ImageFile.FileName);
-                string uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "images/properties");
-                if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+                string fileName = "default-property.png";
+                if (dto.ImageFile != null)
+                {
+                    fileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.ImageFile.FileName);
+                    string uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "images/properties");
 
-                using var stream = new FileStream(Path.Combine(uploadPath, fileName), FileMode.Create);
-                await dto.ImageFile.CopyToAsync(stream);
+                    if (!Directory.Exists(uploadPath))
+                        Directory.CreateDirectory(uploadPath);
+
+                    using var stream = new FileStream(Path.Combine(uploadPath, fileName), FileMode.Create);
+                    await dto.ImageFile.CopyToAsync(stream);
+                }
+
+                var property = new Property
+                {
+                    Title = dto.Title,
+                    Price = dto.Price,
+                    CategoryId = dto.CategoryId,
+                    CityId = dto.CityId,
+                    Bedrooms = dto.Rooms,
+                    Area = dto.Area,
+                    Description = dto.Description,
+                    ImageUrl = fileName,
+
+                    Status = PropertyStatus.Pending,
+                    IsApproved = false,
+
+                    CreatedAt = DateTime.UtcNow,
+                    OwnerId = userId
+                };
+
+                _unitOfWork.Property.Add(property);
+                await _unitOfWork.SaveAsync();
+
+                return Ok(new
+                {
+                    message = "تم إضافة العقار بنجاح، وهو الآن في انتظار مراجعة المسؤول.",
+                    propertyId = property.Id
+                });
             }
-
-            var property = new Property
+            catch (Exception)
             {
-                Title = dto.Title,
-                Price = dto.Price,
-                CategoryId = dto.CategoryId,
-                CityId = dto.CityId,
-                Bedrooms = dto.Rooms,
-                Area = dto.Area,
-                Description = dto.Description,
-                ImageUrl = fileName,
-                IsApproved = false,
-                Status = dto.Status,
-                CreatedAt = DateTime.Now,
-                OwnerId = userId
-            };
-
-            _unitOfWork.Property.Add(property);
-            await _unitOfWork.SaveAsync();
-
-            // تعديل رسالة النجاح
-            return Ok(new { message = "تم إضافة العقار بنجاح، وهو الآن في انتظار موافقة المسؤول." });
+                return StatusCode(500, new { message = "حدث خطأ أثناء حفظ البيانات، يرجى المحاولة لاحقاً." });
+            }
         }
 
         /// <summary> ------ update property ------ </summary>
@@ -233,44 +260,54 @@ namespace RealEstate.Services
         public async Task<IActionResult> UpdatePropertyAsync(int id, [FromForm] PropertyCreateDto dto)
         {
             var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id && p.OwnerId == userId);
 
             if (property == null)
                 return NotFound(new { message = "عفواً، العقار غير موجود أو ليس لديك صلاحية لتعديله." });
 
-            if (dto.ImageFile != null)
+            try
             {
-                if (!IsValidImage(dto.ImageFile))
-                    return BadRequest("صيغة الصورة غير مدعومة (JPG, PNG, WebP فقط).");
+                if (dto.ImageFile != null)
+                {
+                    if (!IsValidImage(dto.ImageFile))
+                        return BadRequest(new { message = "صيغة الصورة غير مدعومة (JPG, PNG, WebP فقط)." });
 
-                DeleteImageFile(property.ImageUrl);
+                    if (!string.IsNullOrEmpty(property.ImageUrl) && property.ImageUrl != "default-property.png")
+                        DeleteImageFile(property.ImageUrl);
 
-                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.ImageFile.FileName);
-                string uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "images/properties");
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.ImageFile.FileName);
+                    string uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "images/properties");
 
-                if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+                    if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
 
-                using var stream = new FileStream(Path.Combine(uploadPath, fileName), FileMode.Create);
-                await dto.ImageFile.CopyToAsync(stream);
-                property.ImageUrl = fileName;
+                    using var stream = new FileStream(Path.Combine(uploadPath, fileName), FileMode.Create);
+                    await dto.ImageFile.CopyToAsync(stream);
+                    property.ImageUrl = fileName;
+                }
+
+                if (!string.IsNullOrEmpty(dto.Title)) property.Title = dto.Title;
+                if (dto.Price.HasValue && dto.Price > 0) property.Price = dto.Price.Value;
+                if (!string.IsNullOrEmpty(dto.Description)) property.Description = dto.Description;
+                if (dto.Rooms.HasValue) property.Bedrooms = dto.Rooms.Value;
+                if (dto.Area.HasValue) property.Area = dto.Area.Value;
+                if (dto.CategoryId.HasValue && dto.CategoryId > 0) property.CategoryId = dto.CategoryId.Value;
+                if (dto.CityId.HasValue && dto.CityId > 0) property.CityId = dto.CityId.Value;
+
+                property.Status = PropertyStatus.Pending;
+                property.IsApproved = false;
+
+                await _unitOfWork.SaveAsync();
+
+                return Ok(new { message = ".تم تحديث البيانات بنجاح" });
             }
-
-            property.Title = dto.Title;
-            property.Price = dto.Price;
-            property.Description = dto.Description;
-            property.Bedrooms = dto.Rooms;
-            property.Area = dto.Area;
-            property.CategoryId = dto.CategoryId;
-            property.CityId = dto.CityId;
-            property.Status = dto.Status;
-
-            property.IsApproved = false;
-
-            await _unitOfWork.SaveAsync();
-
-            return Ok(new { message = "تم تحديث البيانات بنجاح، وفي انتظار مراجعة الإدارة." });
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = ".حدث خطأ أثناء تحديث البيانات" });
+            }
         }
+
 
         [Authorize]
         /// <summary> ------ Delete property and its image (Owner or Admin) ------ </summary>
@@ -282,7 +319,7 @@ namespace RealEstate.Services
                 var property = await _unitOfWork.Property.GetFirstOrDefaultAsync(p => p.Id == id);
 
                 if (property == null)
-                    return new NotFoundObjectResult(new { message = "العقار غير موجود بالفعل." });
+                    return new NotFoundObjectResult(new { message = ".العقار غير موجود بالفعل" });
 
                 // Identity check
                 var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);

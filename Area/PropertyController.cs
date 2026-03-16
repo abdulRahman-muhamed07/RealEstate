@@ -20,8 +20,10 @@ namespace RealEstate.Controllers
         public async Task<IActionResult> GetById(int id) => await _service.GetPropertyByIdAsync(id);
 
         [HttpPost("add")]
-        public async Task<IActionResult> Add([FromForm] PropertyCreateDto dto) => await _service.AddPropertyAsync(dto);
-
+        public async Task<IActionResult> Add([FromForm] PropertyAddDto dto) 
+        {
+            return await _service.AddPropertyAsync(dto);
+        }
         [HttpPut("update/{id}")]
         [Authorize]
         public async Task<IActionResult> Update(int id, [FromForm] PropertyCreateDto dto) => await _service.UpdatePropertyAsync(id, dto);

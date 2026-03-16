@@ -9,7 +9,7 @@ namespace RealEstate.Services
         // Property Operations
         Task<IActionResult> GetFilteredPropertiesAsync(PropertyFilterDto filter);
         Task<IActionResult> GetPropertyByIdAsync(int id);
-        Task<IActionResult> AddPropertyAsync(PropertyCreateDto dto);
+        Task<IActionResult> AddPropertyAsync(PropertyAddDto dto);
         Task<IActionResult> UpdatePropertyAsync(int id, PropertyCreateDto dto);
         Task<IActionResult> DeletePropertyAsync(int id, System.Security.Claims.ClaimsPrincipal user);
 
