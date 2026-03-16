@@ -18,7 +18,7 @@ namespace RealEstate.Services
         Task<IActionResult> UpdateStatusAsync(int id, UpdateStatusDto dto); 
         // User Specific
         Task<IActionResult> GetUserPropertiesAsync(string? userId = null);
-        Task<IActionResult> ToggleFavoriteAsync(string? userId, int propertyId);
+        Task<IActionResult> ToggleFavoriteAsync(int propertyId, string? userId = null);
         Task<IActionResult> GetUserFavoritesAsync(string? userId);
     }
 }

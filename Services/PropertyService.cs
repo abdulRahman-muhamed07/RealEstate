@@ -500,7 +500,6 @@ namespace RealEstate.Services
         }
 
         /// <summary> ------ Get list of user's favorite properties ------ </summary>
-        /// <summary> ------ Get list of user's favorite properties ------ </summary>
         [Authorize]
         public async Task<IActionResult> GetUserFavoritesAsync(string? userId = null)
         {
