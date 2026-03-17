@@ -79,7 +79,27 @@ public class AccountController : ControllerBase
 
 
 
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
 
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user == null)
+        {
+            return BadRequest("حدث خطأ في عملية تغيير كلمة المرور.");
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+
+        if (result.Succeeded)
+        {
+            return Ok(new { message = "تم تغيير كلمة المرور بنجاح، يمكنك الآن تسجيل الدخول." });
+        }
+
+        return BadRequest(result.Errors);
+    }
 
 
 
