@@ -43,7 +43,12 @@ namespace RealEstate
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<IPropertyService, PropertyService>();
             builder.Services.AddHttpContextAccessor();
-
+            builder.Services.ConfigureApplicationCookie(options =>
+             {
+                 options.ExpireTimeSpan = TimeSpan.FromDays(14); 
+                 options.SlidingExpiration = true; 
+                 options.Cookie.HttpOnly = true;
+             });
             // ------ Controllers & JSON Formatting ------
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>

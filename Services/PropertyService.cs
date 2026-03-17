@@ -429,7 +429,6 @@ namespace RealEstate.Services
         {
             try
             {
-                // لو الأدمن باعت ID نجيب عقارات يوزر معين، لو لا نجيب عقارات اليوزر اللي عامل Login
                 var id = userId ?? GetCurrentUserId();
                 if (string.IsNullOrEmpty(id)) return Unauthorized();
 
