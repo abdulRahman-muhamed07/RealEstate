@@ -53,7 +53,7 @@ namespace RealEstate.Controllers
         [Authorize]
         public async Task<IActionResult> ToggleFavorite(int propertyId, [FromQuery] string? userId = null)
         {
-            return await _service.ToggleFavoriteAsync(userId, propertyId);
+            return await _service.ToggleFavoriteAsync(propertyId, userId);
         }
 
         [HttpGet("myfavorites")]

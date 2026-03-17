@@ -67,36 +67,27 @@ public class AccountController : ControllerBase
 
 
     [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPassword([FromBody] string email)
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
-        var user = await _userManager.FindByEmailAsync(email);
+        var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user == null) return Ok(new { message = "إذا كان الحساب موجوداً، فستصلك رسالة" });
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
         return Ok(new { token, message = "استخدم هذا الـ Token في صفحة تغيير الباسورد" });
     }
-
 
 
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null)
-        {
-            return BadRequest("حدث خطأ في عملية تغيير كلمة المرور.");
-        }
+        if (user == null) return BadRequest("حدث خطأ في العملية.");
 
         var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
 
-        if (result.Succeeded)
-        {
-            return Ok(new { message = "تم تغيير كلمة المرور بنجاح، يمكنك الآن تسجيل الدخول." });
-        }
+        if (result.Succeeded) return Ok(new { message = "تم تغيير كلمة المرور بنجاح." });
 
         return BadRequest(result.Errors);
     }
