@@ -13,8 +13,8 @@ namespace RealEstate.DataAccess
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            //  -------- Migrates all data  -------- 
-            await context.Database.MigrateAsync();
+            //  -------- Creates DB if not exists  -------- 
+            await context.Database.EnsureCreatedAsync();
 
             // --------  Creating Rules  -------- 
             if (!await roleManager.RoleExistsAsync("Admin")) await roleManager.CreateAsync(new IdentityRole("Admin"));

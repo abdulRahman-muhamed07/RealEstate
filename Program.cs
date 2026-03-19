@@ -14,7 +14,16 @@ namespace RealEstate
 
             // ------ Database Connection ------
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // ------ CORS ------
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+                });
+            });
 
             // ------ Identity Configuration ------
             // Note: Added once to avoid "Scheme already exists" error
@@ -30,7 +39,11 @@ namespace RealEstate
             builder.Services.ConfigureApplicationCookie(options =>
             {
                 options.Cookie.HttpOnly = true;
-                options.ExpireTimeSpan = TimeSpan.FromDays(7);
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+                options.Cookie.IsEssential = true;
+                options.ExpireTimeSpan = TimeSpan.FromDays(14);
+                options.SlidingExpiration = true;
                 // Return 401 instead of redirecting to login page
                 options.Events.OnRedirectToLogin = context =>
                 {
@@ -43,12 +56,6 @@ namespace RealEstate
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<IPropertyService, PropertyService>();
             builder.Services.AddHttpContextAccessor();
-            builder.Services.ConfigureApplicationCookie(options =>
-             {
-                 options.ExpireTimeSpan = TimeSpan.FromDays(14); 
-                 options.SlidingExpiration = true; 
-                 options.Cookie.HttpOnly = true;
-             });
             // ------ Controllers & JSON Formatting ------
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
@@ -77,12 +84,14 @@ namespace RealEstate
                 app.MapOpenApi();
             }
 
-            app.UseHttpsRedirection();
 
             // ------ Static Files (Images) ------
             app.UseStaticFiles();
 
             app.UseRouting();
+
+            // ------ CORS ------
+            app.UseCors("AllowFrontend");
 
             // ------ Auth Middleware (Order Matters!) ------
             app.UseAuthentication();
