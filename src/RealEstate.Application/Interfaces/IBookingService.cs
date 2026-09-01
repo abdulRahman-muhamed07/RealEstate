@@ -1,6 +1,6 @@
 using RealEstate.Application.Common;
 using RealEstate.Application.Features.Bookings;
-using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Application.Interfaces;
 

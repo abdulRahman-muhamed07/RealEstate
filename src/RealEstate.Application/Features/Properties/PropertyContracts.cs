@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using RealEstate.Application.Common;
+using RealEstate.Domain.Enums;
 using RealEstate.Domain.Entities;
 
 namespace RealEstate.Application.Features.Properties;
@@ -23,7 +24,7 @@ public sealed class PropertyFilterRequest
     [Range(1, 100)] public int PageSize { get; init; } = 10;
 }
 
-public sealed class CreatePropertyRequest
+public class CreatePropertyRequest
 {
     [Required, StringLength(200)] public string Title { get; init; } = string.Empty;
     [Required, StringLength(3000)] public string Description { get; init; } = string.Empty;

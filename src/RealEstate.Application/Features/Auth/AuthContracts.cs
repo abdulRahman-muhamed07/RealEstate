@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Application.Features.Auth;
 
