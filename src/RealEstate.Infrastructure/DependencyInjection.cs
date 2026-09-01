@@ -12,12 +12,12 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                sql => sql.EnableRetryOnFailure(5)));
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), sql => sql.EnableRetryOnFailure(5)));
 
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IPropertyService, PropertyService>();
+        services.AddScoped<PropertyService>();
+        services.AddScoped<IPropertyQueryService>(sp => sp.GetRequiredService<PropertyService>());
+        services.AddScoped<IPropertyCommandService>(sp => sp.GetRequiredService<PropertyService>());
         services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<IFavoriteService, FavoriteService>();
         services.AddScoped<IReviewService, ReviewService>();
