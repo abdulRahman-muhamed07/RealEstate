@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Infrastructure.Persistence;
 
@@ -14,21 +16,27 @@ public static class DatabaseInitializer
         var migrations = await db.Database.GetMigrationsAsync();
         var applied = await db.Database.GetAppliedMigrationsAsync();
         if (migrations.Any() && migrations.Except(applied).Any())
+        {
             await db.Database.MigrateAsync();
+        }
         else if (development && !await db.Database.CanConnectAsync())
+        {
             await db.Database.EnsureCreatedAsync();
+        }
 
-        await SeedUsersAsync(scope.ServiceProvider, db);
+        await SeedAsync(db);
     }
 
-    private static async Task SeedUsersAsync(IServiceProvider services, AppDbContext db)
+    private static async Task SeedAsync(AppDbContext db)
     {
         if (await db.Users.AnyAsync()) return;
+
         var hasher = new PasswordHasher<User>();
         var admin = new User { FirstName = "System", LastName = "Admin", Email = "admin@smartrealestate.local", Role = UserRole.Admin };
         admin.PasswordHash = hasher.HashPassword(admin, "Password123!");
         var vendor = new User { FirstName = "Demo", LastName = "Vendor", Email = "vendor@smartrealestate.local", Role = UserRole.Vendor };
         vendor.PasswordHash = hasher.HashPassword(vendor, "Password123!");
+
         db.Users.AddRange(admin, vendor);
         db.Properties.Add(new Property
         {
@@ -46,6 +54,7 @@ public static class DatabaseInitializer
             OwnerId = vendor.Id,
             IsApproved = true
         });
+
         await db.SaveChangesAsync();
     }
 }
