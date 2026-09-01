@@ -23,7 +23,8 @@ public static class DatabaseInitializer
             await db.Database.EnsureCreatedAsync();
         }
 
-        await SeedAsync(db);
+        if (development)
+            await SeedAsync(db);
     }
 
     private static async Task SeedAsync(AppDbContext db)
