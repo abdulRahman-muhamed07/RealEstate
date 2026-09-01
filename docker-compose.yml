@@ -8,6 +8,12 @@ services:
       - "1433:1433"
     volumes:
       - realestate_sql:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", " /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'RealEstate!Sql2026Strong' -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   api:
     build:
@@ -16,13 +22,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Server=sql,1433;Database=RealEstateDb;User Id=sa;Password=RealEstate!Sql2026Strong;TrustServerCertificate=True;"
-      Jwt__Key: "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS"
+      Jwt__Key: "RealEstate.LocalDevelopment.JwtKey.2026.ChangeForProduction!"
       Jwt__Issuer: "RealEstate.Api"
       Jwt__Audience: "RealEstate.Client"
     ports:
       - "8080:8080"
     depends_on:
-      - sql
+      sql:
+        condition: service_healthy
 
 volumes:
   realestate_sql:
