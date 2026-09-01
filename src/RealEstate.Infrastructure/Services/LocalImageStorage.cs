@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using RealEstate.Application.Common;
 using RealEstate.Application.Interfaces;
 
@@ -13,13 +15,16 @@ public sealed class LocalImageStorage : IImageStorage
     private const int MaxFiles = 8;
     private const long MaxFileSize = 5 * 1024 * 1024;
     private readonly string _rootPath;
+    private readonly string _publicBaseUrl;
 
-    public LocalImageStorage(IWebHostEnvironment environment)
+    public LocalImageStorage(IWebHostEnvironment environment, IConfiguration configuration)
     {
         var webRoot = environment.WebRootPath
             ?? Path.Combine(environment.ContentRootPath, "wwwroot");
 
         _rootPath = Path.Combine(webRoot, "uploads", "properties");
+        _publicBaseUrl = configuration["Storage:PublicBaseUrl"]?.TrimEnd('/')
+            ?? throw new InvalidOperationException("Storage:PublicBaseUrl is not configured.");
     }
 
     public async Task<IReadOnlyList<string>> SaveAsync(
@@ -51,7 +56,7 @@ public sealed class LocalImageStorage : IImageStorage
                     useAsync: true);
 
                 await input.CopyToAsync(output, ct);
-                savedUrls.Add($"/uploads/properties/{fileName}");
+                savedUrls.Add($"{_publicBaseUrl}/uploads/properties/{fileName}");
             }
 
             return savedUrls;
