@@ -28,5 +28,5 @@ public sealed class AdminController(IAdminService adminService, IPropertyService
 
     [HttpDelete("properties/{id:int}")]
     public async Task<IActionResult> DeleteProperty(int id, CancellationToken ct) =>
-        this.ToActionResult(await propertyService.DeleteAsync(id, string.Empty, true, ct));
+        this.ToActionResult(await propertyService.DeleteByAdminAsync(id, ct));
 }
