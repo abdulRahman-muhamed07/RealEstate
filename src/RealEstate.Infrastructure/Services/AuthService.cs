@@ -1,36 +1,45 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using RealEstate.Application.Contracts;
+using RealEstate.Application.Common;
+using RealEstate.Application.Features.Auth;
+using RealEstate.Application.Interfaces;
 using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 using RealEstate.Infrastructure.Persistence;
 
 namespace RealEstate.Infrastructure.Services;
 
-public sealed class AuthService(AppDbContext db, ITokenService tokens) : IAuthService
+public sealed class AuthService(AppDbContext db, ITokenService tokenService) : IAuthService
 {
-    private readonly PasswordHasher<User> _hasher = new();
+    private readonly PasswordHasher<User> _passwordHasher = new();
 
-    public async Task<ContractsResult<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken ct)
+    public async Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken ct)
     {
         var email = request.Email.Trim().ToLowerInvariant();
-        if (await db.Users.AnyAsync(x => x.Email == email, ct)) return ContractsResult<AuthResponse>.Fail("Email already exists.", 409);
-        if (request.Role == UserRole.Admin) return ContractsResult<AuthResponse>.Fail("Admin registration is not allowed.", 403);
-        var user = new User { FirstName = request.FirstName.Trim(), LastName = request.LastName.Trim(), Email = email, PhoneNumber = request.PhoneNumber, Role = request.Role };
-        user.PasswordHash = _hasher.HashPassword(user, request.Password);
-        db.Users.Add(user); await db.SaveChangesAsync(ct);
-        return ContractsResult<AuthResponse>.Ok(Map(user));
+        if (request.Role == UserRole.Admin) return Result<AuthResponse>.Fail(ErrorCode.Forbidden, "Admin registration is not allowed.");
+        if (await db.Users.AnyAsync(x => x.Email == email, ct)) return Result<AuthResponse>.Fail(ErrorCode.Conflict, "Email already exists.");
+
+        var user = new User
+        {
+            FirstName = request.FirstName.Trim(), LastName = request.LastName.Trim(), Email = email,
+            PhoneNumber = request.PhoneNumber?.Trim(), Role = request.Role
+        };
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+        db.Users.Add(user);
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateException) { return Result<AuthResponse>.Fail(ErrorCode.Conflict, "The account could not be created because the email already exists."); }
+        return Result<AuthResponse>.Ok(ToResponse(user));
     }
 
-    public async Task<ContractsResult<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken ct)
+    public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken ct)
     {
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await db.Users.SingleOrDefaultAsync(x => x.Email == email, ct);
-        if (user is null) return ContractsResult<AuthResponse>.Fail("Invalid email or password.", 401);
-        var result = _hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
-        return result == PasswordVerificationResult.Failed
-            ? ContractsResult<AuthResponse>.Fail("Invalid email or password.", 401)
-            : ContractsResult<AuthResponse>.Ok(Map(user));
+        if (user is null) return Result<AuthResponse>.Fail(ErrorCode.Unauthorized, "Invalid email or password.");
+        var verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        if (verification == PasswordVerificationResult.Failed) return Result<AuthResponse>.Fail(ErrorCode.Unauthorized, "Invalid email or password.");
+        return Result<AuthResponse>.Ok(ToResponse(user));
     }
 
-    private AuthResponse Map(User u) => new(tokens.CreateToken(u), u.Id, u.FirstName, u.LastName, u.Email, u.Role);
+    private AuthResponse ToResponse(User user) => new(tokenService.CreateToken(user), user.Id, user.FirstName, user.LastName, user.Email, user.Role);
 }
