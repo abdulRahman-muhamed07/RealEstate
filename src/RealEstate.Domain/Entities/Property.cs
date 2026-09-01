@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Domain.Entities;
 
@@ -28,8 +29,6 @@ public sealed class Property
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
     public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 }
-public enum PropertyStatus { Available, Booked, Sold }
-public enum ListingType { Sale, Rent }
 
 public sealed class PropertyImage
 {
