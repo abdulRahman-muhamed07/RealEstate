@@ -1,3 +1,5 @@
+using RealEstate.Domain.Enums;
+
 namespace RealEstate.Domain.Entities;
 
 public sealed class Booking
@@ -11,4 +13,3 @@ public sealed class Booking
     public BookingStatus Status { get; set; } = BookingStatus.Pending;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
-public enum BookingStatus { Pending, Confirmed, Rejected, Cancelled }
