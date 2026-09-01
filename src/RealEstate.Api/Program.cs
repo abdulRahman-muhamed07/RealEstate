@@ -1,40 +1,69 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using RealEstate.Domain.Entities;
+using RealEstate.Api.Middleware;
 using RealEstate.Infrastructure;
-using RealEstate.Infrastructure.Persistence;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
-builder.Services.AddCors(o => o.AddPolicy("Frontend", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
-{
-    var key = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is missing.");
-    o.TokenValidationParameters = new TokenValidationParameters { ValidateIssuerSigningKey=true, IssuerSigningKey=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)), ValidateIssuer=true, ValidIssuer=builder.Configuration["Jwt:Issuer"], ValidateAudience=true, ValidAudience=builder.Configuration["Jwt:Audience"], ValidateLifetime=true, ClockSkew=TimeSpan.FromSeconds(30) };
-});
+
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .GetChildren()
+    .Select(x => x.Value)
+    .Where(x => !string.IsNullOrWhiteSpace(x))
+    .Select(x => x!)
+    .ToArray();
+
+builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
+    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var key = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is missing.");
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
+    });
+
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(o => { o.SwaggerDoc("v1", new OpenApiInfo { Title="Smart Real Estate API", Version="v1" }); o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Name="Authorization", Type=SecuritySchemeType.Http, Scheme="bearer", BearerFormat="JWT", In=ParameterLocation.Header }); o.AddSecurityRequirement(new OpenApiSecurityRequirement { { new OpenApiSecurityScheme { Reference=new OpenApiReference { Type=ReferenceType.SecurityScheme, Id="Bearer" } }, Array.Empty<string>() } }); });
-var app = builder.Build();
-using (var scope = app.Services.CreateScope()) { var db = scope.ServiceProvider.GetRequiredService<AppDbContext>(); await db.Database.EnsureCreatedAsync(); await SeedData.SeedAsync(scope.ServiceProvider); }
-app.UseSwagger(); app.UseSwaggerUI(); app.UseStaticFiles(); app.UseCors("Frontend"); app.UseAuthentication(); app.UseAuthorization(); app.MapControllers(); app.Run();
-
-static class SeedData
+builder.Services.AddSwaggerGen(options =>
 {
-    public static async Task SeedAsync(IServiceProvider sp)
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Smart Real Estate API", Version = "v1" });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        var db=sp.GetRequiredService<AppDbContext>();
-        if (await db.Users.AnyAsync()) return;
-        var passwordHasher=new PasswordHasher<User>();
-        var admin=new User { FirstName="System", LastName="Admin", Email="admin@smartrealestate.local", Role=UserRole.Admin }; admin.PasswordHash=passwordHasher.HashPassword(admin,"Password123!");
-        var vendor=new User { FirstName="Demo", LastName="Vendor", Email="vendor@smartrealestate.local", Role=UserRole.Vendor }; vendor.PasswordHash=passwordHasher.HashPassword(vendor,"Password123!");
-        db.Users.AddRange(admin,vendor);
-        db.Properties.Add(new Property { Title="Modern Cairo Apartment", Description="Demo approved property", Price=2500000, Area=180, Bedrooms=3, Bathrooms=2, Type="apartment", ListingType=ListingType.Sale, Location="New Cairo, Egypt", CategoryId=1, CityId=4, OwnerId=vendor.Id, IsApproved=true });
-        await db.SaveChangesAsync();
-    }
-}
+        Name = "Authorization", Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT", In = ParameterLocation.Header
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }, Array.Empty<string>() }
+    });
+});
+
+var app = builder.Build();
+await DatabaseInitializer.InitializeAsync(app.Services, app.Environment.IsDevelopment());
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseCors("Frontend");
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseSwagger();
+app.UseSwaggerUI();
+app.MapControllers();
+
+app.Run();
