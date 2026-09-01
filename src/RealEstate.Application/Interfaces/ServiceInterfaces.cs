@@ -14,7 +14,7 @@ public interface IPropertyService
     Task<Result<PagedResult<PropertyListItem>>> SearchAsync(PropertyFilterRequest request, CancellationToken ct);
     Task<Result<PropertyDetails>> GetByIdAsync(int id, CancellationToken ct);
     Task<Result<int>> CreateAsync(CreatePropertyRequest request, string userId, CancellationToken ct);
-    Task<Result<bool>> UpdateAsync(int id, CreatePropertyRequest request, string userId, bool isAdmin, CancellationToken ct);
+    Task<Result<bool>> UpdateAsync(int id, UpdatePropertyRequest request, string userId, bool isAdmin, CancellationToken ct);
     Task<Result<bool>> DeleteAsync(int id, string userId, bool isAdmin, CancellationToken ct);
     Task<IReadOnlyList<PropertyListItem>> GetMineAsync(string userId, CancellationToken ct);
     Task<IReadOnlyList<PropertyListItem>> GetPendingAsync(CancellationToken ct);
