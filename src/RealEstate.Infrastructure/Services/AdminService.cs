@@ -1,0 +1,42 @@
+using Microsoft.EntityFrameworkCore;
+using RealEstate.Application.Common;
+using RealEstate.Application.Features.Admin;
+using RealEstate.Application.Features.Properties;
+using RealEstate.Application.Interfaces;
+using RealEstate.Domain.Enums;
+using RealEstate.Infrastructure.Persistence;
+
+namespace RealEstate.Infrastructure.Services;
+
+public sealed class AdminService(AppDbContext db) : IAdminService
+{
+    public async Task<AdminDashboardDto> DashboardAsync(CancellationToken ct) => new(
+        await db.Users.CountAsync(ct),
+        await db.Properties.CountAsync(ct),
+        await db.Properties.CountAsync(x => !x.IsApproved, ct),
+        await db.Bookings.CountAsync(ct),
+        await db.Reviews.CountAsync(ct));
+
+    public async Task<IReadOnlyList<UserSummary>> GetUsersAsync(CancellationToken ct) =>
+        await db.Users.AsNoTracking().OrderByDescending(x => x.CreatedAt)
+            .Select(x => new UserSummary(x.Id, (x.FirstName + " " + x.LastName).Trim(), x.Email, x.PhoneNumber, x.Role, x.CreatedAt))
+            .ToListAsync(ct);
+
+    public async Task<Result<bool>> DeleteUserAsync(string userId, CancellationToken ct)
+    {
+        var user = await db.Users.FindAsync([userId], ct);
+        if (user is null) return Result<bool>.Fail(ErrorCode.NotFound, "User not found.");
+        if (user.Role == UserRole.Admin) return Result<bool>.Fail(ErrorCode.InvalidOperation, "An admin account cannot be deleted.");
+        db.Users.Remove(user);
+        await db.SaveChangesAsync(ct);
+        return Result<bool>.Ok(true);
+    }
+
+    public async Task<IReadOnlyList<PropertyListItem>> GetPropertiesAsync(CancellationToken ct) =>
+        await db.Properties.AsNoTracking().Include(x => x.Category).Include(x => x.City).Include(x => x.Owner).Include(x => x.Images)
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new PropertyListItem(x.Id, x.Title, x.Price, x.Area, x.Bedrooms, x.Bathrooms, x.Type, x.ListingType, x.Status,
+                x.Location, x.CreatedAt, x.CategoryId, x.Category.Name, x.CityId, x.City == null ? null : x.City.Name,
+                x.OwnerId, (x.Owner.FirstName + " " + x.Owner.LastName).Trim(), x.Images.Select(i => i.Url).ToList()))
+            .ToListAsync(ct);
+}
