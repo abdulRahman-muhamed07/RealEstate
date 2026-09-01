@@ -11,64 +11,48 @@ namespace RealEstate.Api.Controllers;
 
 [ApiController]
 [Route("api/properties")]
-public sealed class PropertiesController(IPropertyService service) : ControllerBase
+public sealed class PropertiesController(IPropertyQueryService queryService, IPropertyCommandService commandService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> Search([FromQuery] PropertyFilterRequest request, CancellationToken ct)
-    {
-        var result = await service.SearchAsync(request, ct);
-        return this.ToActionResult(result);
-    }
+    public async Task<IActionResult> Search([FromQuery] PropertyFilterRequest request, CancellationToken ct) =>
+        this.ToActionResult(await queryService.SearchAsync(request, ct));
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct) =>
-        this.ToActionResult(await service.GetByIdAsync(id, ct));
+        this.ToActionResult(await queryService.GetByIdAsync(id, ct));
 
     [Authorize(Roles = "Vendor,Admin")]
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] PropertyFormRequest request, CancellationToken ct)
     {
-        var result = await service.CreateAsync(request.ToApplication(), UserId(), ct);
-
+        var result = await commandService.CreateAsync(request.ToApplication(), UserId(), ct);
         if (!result.Success)
             return this.ToActionResult(result);
-
         return CreatedAtAction(nameof(GetById), new { id = result.Data }, new { id = result.Data });
     }
 
     [Authorize(Roles = "Vendor,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromForm] PropertyFormRequest request, CancellationToken ct) =>
-        this.ToActionResult(await service.UpdateAsync(
-            id,
-            request.ToApplication(),
-            UserId(),
-            User.IsInRole(nameof(UserRole.Admin)),
-            ct));
+        this.ToActionResult(await commandService.UpdateAsync(id, request.ToApplication(), UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
 
     [Authorize(Roles = "Vendor,Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct) =>
-        this.ToActionResult(await service.DeleteAsync(
-            id,
-            UserId(),
-            User.IsInRole(nameof(UserRole.Admin)),
-            ct));
+        this.ToActionResult(await commandService.DeleteAsync(id, UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
 
     [Authorize]
     [HttpGet("mine")]
-    public async Task<IActionResult> Mine(CancellationToken ct) =>
-        Ok(await service.GetMineAsync(UserId(), ct));
+    public async Task<IActionResult> Mine(CancellationToken ct) => Ok(await queryService.GetMineAsync(UserId(), ct));
 
     [Authorize(Roles = "Admin")]
     [HttpGet("admin/pending")]
-    public async Task<IActionResult> Pending(CancellationToken ct) =>
-        Ok(await service.GetPendingAsync(ct));
+    public async Task<IActionResult> Pending(CancellationToken ct) => Ok(await queryService.GetPendingAsync(ct));
 
     [Authorize(Roles = "Admin")]
     [HttpPatch("admin/{id:int}/status")]
     public async Task<IActionResult> Approve(int id, ApprovePropertyRequest request, CancellationToken ct) =>
-        this.ToActionResult(await service.ApproveAsync(id, request, ct));
+        this.ToActionResult(await commandService.ApproveAsync(id, request, ct));
 
     private string UserId() =>
         User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException();
