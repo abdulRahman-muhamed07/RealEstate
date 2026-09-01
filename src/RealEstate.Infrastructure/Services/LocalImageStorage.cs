@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using RealEstate.Application.Common;
 using RealEstate.Application.Interfaces;
 
@@ -12,57 +10,85 @@ public sealed class LocalImageStorage : IImageStorage
         ".jpg", ".jpeg", ".png", ".webp"
     };
 
+    private const int MaxFiles = 8;
     private const long MaxFileSize = 5 * 1024 * 1024;
-    private readonly IWebHostEnvironment _environment;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly string _rootPath;
 
-    public LocalImageStorage(IWebHostEnvironment environment, IHttpContextAccessor httpContextAccessor)
+    public LocalImageStorage(IWebHostEnvironment environment)
     {
-        _environment = environment;
-        _httpContextAccessor = httpContextAccessor;
+        var webRoot = environment.WebRootPath
+            ?? Path.Combine(environment.ContentRootPath, "wwwroot");
+
+        _rootPath = Path.Combine(webRoot, "uploads", "properties");
     }
 
-    public async Task<IReadOnlyList<string>> SaveAsync(IEnumerable<UploadedFile> files, CancellationToken ct)
+    public async Task<IReadOnlyList<string>> SaveAsync(
+        IEnumerable<UploadedFile> files,
+        CancellationToken ct)
     {
-        var items = files?.Take(8).ToArray() ?? Array.Empty<UploadedFile>();
-        var root = Path.Combine(_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"), "uploads", "properties");
-        Directory.CreateDirectory(root);
-        var saved = new List<string>();
+        var items = files?.Take(MaxFiles).ToArray() ?? Array.Empty<UploadedFile>();
+        Directory.CreateDirectory(_rootPath);
+
+        var savedUrls = new List<string>(items.Length);
+
         try
         {
             foreach (var file in items)
             {
-                var extension = Path.GetExtension(file.FileName);
-                if (!AllowedExtensions.Contains(extension)) throw new InvalidOperationException("Only JPG, JPEG, PNG and WEBP images are allowed.");
-                if (file.Length <= 0 || file.Length > MaxFileSize) throw new InvalidOperationException("Each image must be between 1 byte and 5 MB.");
-                var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-                var path = Path.Combine(root, fileName);
+                Validate(file);
+
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                var fileName = $"{Guid.NewGuid():N}{extension}";
+                var path = Path.Combine(_rootPath, fileName);
+
                 await using var input = file.OpenReadStream();
-                await using var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                await using var output = new FileStream(
+                    path,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 64 * 1024,
+                    useAsync: true);
+
                 await input.CopyToAsync(output, ct);
-                var request = _httpContextAccessor.HttpContext?.Request;
-                var baseUrl = request is null ? string.Empty : $"{request.Scheme}://{request.Host}";
-                saved.Add($"{baseUrl}/uploads/properties/{fileName}");
+                savedUrls.Add($"/uploads/properties/{fileName}");
             }
-            return saved;
+
+            return savedUrls;
         }
         catch
         {
-            await DeleteAsync(saved, ct);
+            await DeleteAsync(savedUrls, CancellationToken.None);
             throw;
         }
     }
 
     public Task DeleteAsync(IEnumerable<string> urls, CancellationToken ct)
     {
-        var root = Path.Combine(_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"), "uploads", "properties");
         foreach (var url in urls ?? Array.Empty<string>())
         {
+            ct.ThrowIfCancellationRequested();
+
             var fileName = Path.GetFileName(url);
-            if (string.IsNullOrWhiteSpace(fileName)) continue;
-            var path = Path.Combine(root, fileName);
-            if (File.Exists(path)) File.Delete(path);
+            if (string.IsNullOrWhiteSpace(fileName))
+                continue;
+
+            var path = Path.Combine(_rootPath, fileName);
+            if (File.Exists(path))
+                File.Delete(path);
         }
+
         return Task.CompletedTask;
+    }
+
+    private static void Validate(UploadedFile file)
+    {
+        var extension = Path.GetExtension(file.FileName);
+
+        if (!AllowedExtensions.Contains(extension))
+            throw new InvalidOperationException("Only JPG, JPEG, PNG and WEBP images are allowed.");
+
+        if (file.Length <= 0 || file.Length > MaxFileSize)
+            throw new InvalidOperationException("Each image must be between 1 byte and 5 MB.");
     }
 }
