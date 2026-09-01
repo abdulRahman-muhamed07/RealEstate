@@ -1,6 +1,6 @@
 @RealEstate_HostAddress = http://localhost:5142
 
-GET {{RealEstate_HostAddress}}/weatherforecast/
+GET {{RealEstate_HostAddress}}/api/properties
 Accept: application/json
 
 ###
