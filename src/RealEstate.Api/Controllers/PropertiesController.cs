@@ -5,7 +5,7 @@ using RealEstate.Api.Extensions;
 using RealEstate.Api.Models;
 using RealEstate.Application.Features.Properties;
 using RealEstate.Application.Interfaces;
-using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Api.Controllers;
 
