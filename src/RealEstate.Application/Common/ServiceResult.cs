@@ -1,7 +1,19 @@
 namespace RealEstate.Application.Common;
 
-public sealed record ServiceResult<T>(bool Success, T? Data, string? Error, int StatusCode = 200)
+public enum ErrorCode
 {
-    public static ServiceResult<T> Ok(T data) => new(true, data, null, 200);
-    public static ServiceResult<T> Fail(string error, int statusCode) => new(false, default, error, statusCode);
+    None,
+    Validation,
+    Unauthorized,
+    Forbidden,
+    NotFound,
+    Conflict,
+    InvalidOperation,
+    Unexpected
+}
+
+public sealed record Result<T>(bool Success, T? Data, ErrorCode ErrorCode = ErrorCode.None, string? Error = null)
+{
+    public static Result<T> Ok(T data) => new(true, data);
+    public static Result<T> Fail(ErrorCode code, string message) => new(false, default, code, message);
 }
