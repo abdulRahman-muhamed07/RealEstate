@@ -1,0 +1,28 @@
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "RealEstate!Sql2026Strong"
+    ports:
+      - "1433:1433"
+    volumes:
+      - realestate_sql:/var/opt/mssql
+
+  api:
+    build:
+      context: .
+      dockerfile: src/RealEstate.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=sql,1433;Database=RealEstateDb;User Id=sa;Password=RealEstate!Sql2026Strong;TrustServerCertificate=True;"
+      Jwt__Key: "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS"
+      Jwt__Issuer: "RealEstate.Api"
+      Jwt__Audience: "RealEstate.Client"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sql
+
+volumes:
+  realestate_sql:
