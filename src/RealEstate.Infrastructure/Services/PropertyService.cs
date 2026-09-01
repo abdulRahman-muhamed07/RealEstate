@@ -69,11 +69,9 @@ public sealed class PropertyService(AppDbContext db, IImageStorage imageStorage)
         if (user.Role is not (UserRole.Vendor or UserRole.Admin))
             return Result<int>.Fail(ErrorCode.Forbidden, "Only vendors or admins can create properties.");
 
-        if (!await db.Categories.AnyAsync(x => x.Id == request.CategoryId, ct))
-            return Result<int>.Fail(ErrorCode.Validation, "Category not found.");
-
-        if (request.CityId.HasValue && !await db.Cities.AnyAsync(x => x.Id == request.CityId.Value, ct))
-            return Result<int>.Fail(ErrorCode.Validation, "City not found.");
+        var validation = await ValidateReferencesAsync(request, ct);
+        if (validation is not null)
+            return Result<int>.Fail(ErrorCode.Validation, validation);
 
         var property = new Property
         {
@@ -220,21 +218,26 @@ public sealed class PropertyService(AppDbContext db, IImageStorage imageStorage)
         ApprovePropertyRequest request,
         CancellationToken ct)
     {
-        var property = await db.Properties.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var property = await db.Properties
+            .Include(x => x.Images)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+
         if (property is null)
             return Result<bool>.Fail(ErrorCode.NotFound, "Property not found.");
 
         if (!request.Approve)
         {
+            var urls = property.Images.Select(x => x.Url).ToArray();
             db.Properties.Remove(property);
+            await db.SaveChangesAsync(ct);
+            await imageStorage.DeleteAsync(urls, CancellationToken.None);
+            return Result<bool>.Ok(true);
         }
-        else
-        {
-            property.IsApproved = true;
-            if (request.ListingType.HasValue)
-                property.ListingType = request.ListingType.Value;
-            property.Status = PropertyStatus.Available;
-        }
+
+        property.IsApproved = true;
+        if (request.ListingType.HasValue)
+            property.ListingType = request.ListingType.Value;
+        property.Status = PropertyStatus.Available;
 
         await db.SaveChangesAsync(ct);
         return Result<bool>.Ok(true);
@@ -282,9 +285,7 @@ public sealed class PropertyService(AppDbContext db, IImageStorage imageStorage)
         return query;
     }
 
-    private static IQueryable<Property> ApplySorting(
-        IQueryable<Property> query,
-        string sortBy)
+    private static IQueryable<Property> ApplySorting(IQueryable<Property> query, string sortBy)
     {
         return sortBy.Trim().ToLowerInvariant() switch
         {
@@ -309,7 +310,10 @@ public sealed class PropertyService(AppDbContext db, IImageStorage imageStorage)
         return null;
     }
 
-    private static void UpdatePropertyValues(Property property, UpdatePropertyRequest request, bool isAdmin)
+    private static void UpdatePropertyValues(
+        Property property,
+        UpdatePropertyRequest request,
+        bool isAdmin)
     {
         property.Title = request.Title.Trim();
         property.Description = request.Description.Trim();
