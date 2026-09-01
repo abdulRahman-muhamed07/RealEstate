@@ -2,7 +2,9 @@ using System.Text.Json;
 
 namespace RealEstate.Api.Middleware;
 
-public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+public sealed class ExceptionHandlingMiddleware(
+    RequestDelegate next,
+    ILogger<ExceptionHandlingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
     {
@@ -16,20 +18,34 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         }
         catch (UnauthorizedAccessException)
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await WriteAsync(context, "Unauthorized.");
+            await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "Unauthorized.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ex.Message);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception. TraceId: {TraceId}", context.TraceIdentifier);
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await WriteAsync(context, "An unexpected error occurred.");
+            await WriteErrorAsync(
+                context,
+                StatusCodes.Status500InternalServerError,
+                "An unexpected error occurred.");
         }
     }
 
-    private static async Task WriteAsync(HttpContext context, string message)
+    private static async Task WriteErrorAsync(
+        HttpContext context,
+        int statusCode,
+        string message)
     {
+        context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
-        await context.Response.WriteAsync(JsonSerializer.Serialize(new { message, traceId = context.TraceIdentifier }));
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new
+        {
+            message,
+            traceId = context.TraceIdentifier
+        }));
     }
 }
