@@ -15,9 +15,8 @@ public static class DependencyInjection
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), sql => sql.EnableRetryOnFailure(5)));
 
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<PropertyService>();
-        services.AddScoped<IPropertyQueryService>(sp => sp.GetRequiredService<PropertyService>());
-        services.AddScoped<IPropertyCommandService>(sp => sp.GetRequiredService<PropertyService>());
+        services.AddScoped<IPropertyQueryService, PropertyQueryService>();
+        services.AddScoped<IPropertyCommandService, PropertyCommandService>();
         services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<IFavoriteService, FavoriteService>();
         services.AddScoped<IReviewService, ReviewService>();
