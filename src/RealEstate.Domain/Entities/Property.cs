@@ -28,6 +28,43 @@ public sealed class Property
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
     public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+
+    public void UpdateDetails(
+        string title,
+        string description,
+        decimal price,
+        double area,
+        int bedrooms,
+        int bathrooms,
+        string type,
+        ListingType listingType,
+        string location,
+        int categoryId,
+        int? cityId,
+        bool approved)
+    {
+        Title = title.Trim();
+        Description = description.Trim();
+        Price = price;
+        Area = area;
+        Bedrooms = bedrooms;
+        Bathrooms = bathrooms;
+        Type = type.Trim().ToLowerInvariant();
+        ListingType = listingType;
+        Location = location.Trim();
+        CategoryId = categoryId;
+        CityId = cityId;
+        IsApproved = approved;
+        Status = PropertyStatus.Available;
+    }
+
+    public void Approve(ListingType? listingType = null)
+    {
+        IsApproved = true;
+        if (listingType.HasValue)
+            ListingType = listingType.Value;
+        Status = PropertyStatus.Available;
+    }
 }
 
 public sealed class PropertyImage
