@@ -29,6 +29,8 @@ public sealed class Property
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
     public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 
+    public bool CanBeModifiedBy(string userId, bool isAdmin) => isAdmin || OwnerId == userId;
+
     public void UpdateDetails(
         string title,
         string description,
