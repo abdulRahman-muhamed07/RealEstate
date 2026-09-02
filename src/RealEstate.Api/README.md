@@ -1,5 +1,9 @@
 # API layer
 
-The API project contains only HTTP concerns: controllers, HTTP-specific request models, middleware, Swagger, authentication wiring, and application composition.
+`RealEstate.Api` is the HTTP boundary of the application.
 
-Business logic lives in Application/Infrastructure. EF Core and SQL Server configuration belongs to Infrastructure.
+It contains controllers, HTTP-specific request models, middleware, Swagger/OpenAPI setup, authentication/authorization wiring, and dependency composition.
+
+The API delegates use cases to Application abstractions. Domain entities own domain rules, while Infrastructure owns EF Core/SQL Server persistence, file storage, and other technical implementations.
+
+Controllers should stay thin: bind HTTP input, obtain the current user context when needed, invoke an application abstraction, and translate the result into an HTTP response.

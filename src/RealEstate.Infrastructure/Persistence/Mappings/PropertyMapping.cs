@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 using RealEstate.Application.Features.Properties;
 using RealEstate.Domain.Entities;
 
-namespace RealEstate.Infrastructure.Services;
+namespace RealEstate.Infrastructure.Persistence.Mappings;
 
 internal static class PropertyMapping
 {

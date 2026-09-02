@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using RealEstate.Application.Common;
 using RealEstate.Domain.Enums;
-using RealEstate.Domain.Entities;
 
 namespace RealEstate.Application.Features.Properties;
 
@@ -42,6 +41,6 @@ public class CreatePropertyRequest
 
 public sealed class UpdatePropertyRequest : CreatePropertyRequest { }
 public sealed record ApprovePropertyRequest(bool Approve, ListingType? ListingType);
-public sealed record PropertyListItem(int Id,string Title,decimal Price,double Area,int Bedrooms,int Bathrooms,string Type,ListingType ListingType,PropertyStatus Status,string Location,DateTime CreatedAt,int CategoryId,string CategoryName,int? CityId,string? CityName,string OwnerId,string OwnerName,IReadOnlyList<string> Images);
-public sealed record PropertyDetails(PropertyListItem Property,double AverageRating,int ReviewCount);
-public sealed record PagedResult<T>(IReadOnlyList<T> Data,int TotalCount,int Page,int PageSize,int TotalPages);
+public sealed record PropertyListItem(int Id, string Title, decimal Price, double Area, int Bedrooms, int Bathrooms, string Type, ListingType ListingType, PropertyStatus Status, string Location, DateTime CreatedAt, int CategoryId, string CategoryName, int? CityId, string? CityName, string OwnerId, string OwnerName, IReadOnlyList<string> Images);
+public sealed record PropertyDetails(PropertyListItem Property, double AverageRating, int ReviewCount);
+public sealed record PagedResult<T>(IReadOnlyList<T> Data, int TotalCount, int Page, int PageSize, int TotalPages);

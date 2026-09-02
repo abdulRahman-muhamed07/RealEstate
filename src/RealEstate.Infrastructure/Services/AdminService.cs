@@ -4,6 +4,7 @@ using RealEstate.Application.Features.Admin;
 using RealEstate.Application.Features.Properties;
 using RealEstate.Application.Interfaces;
 using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 using RealEstate.Infrastructure.Persistence;
 
 namespace RealEstate.Infrastructure.Services;

@@ -3,6 +3,7 @@ using RealEstate.Application.Common;
 using RealEstate.Application.Features.Properties;
 using RealEstate.Application.Interfaces;
 using RealEstate.Infrastructure.Persistence;
+using RealEstate.Infrastructure.Persistence.Mappings;
 
 namespace RealEstate.Infrastructure.Services;
 
