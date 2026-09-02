@@ -8,6 +8,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/RealEstate.Application/RealEstate.Application.csproj" />
+    <ProjectReference Include="../../src/RealEstate.Domain/RealEstate.Domain.csproj" />
+    <ProjectReference Include="../../src/RealEstate.Infrastructure/RealEstate.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/RealEstate.Api/RealEstate.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
