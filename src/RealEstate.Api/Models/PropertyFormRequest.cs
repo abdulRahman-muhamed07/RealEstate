@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 using RealEstate.Application.Common;
 using RealEstate.Application.Features.Properties;
-using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Api.Models;
 
@@ -34,6 +34,6 @@ public sealed class PropertyFormRequest
         Location = Location,
         CategoryId = CategoryId,
         CityId = CityId,
-        Images = Images.Select(x => new UploadedFile(x.FileName, x.ContentType, x.Length, x.OpenReadStream)).ToArray()
+        Images = Images.Select(x => new UploadedFile(x.FileName, x.ContentType, x.Length, x.OpenReadStream())).ToArray()
     };
 }
