@@ -12,7 +12,7 @@ public static class DatabaseInitializer
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var migrations = await db.Database.GetMigrationsAsync();
+        var migrations = await db.Database.GetPendingMigrationsAsync();
 
         if (migrations.Any())
         {
