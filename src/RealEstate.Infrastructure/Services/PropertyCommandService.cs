@@ -74,7 +74,20 @@ public sealed class PropertyCommandService(AppDbContext db, IImageStorage imageS
             return Result<bool>.Fail(ErrorCode.Validation, validation);
 
         var oldUrls = property.Images.Select(x => x.Url).ToArray();
-        UpdatePropertyValues(property, request, isAdmin);
+        property.UpdateDetails(
+            request.Title,
+            request.Description,
+            request.Price,
+            request.Area,
+            request.Bedrooms,
+            request.Bathrooms,
+            request.Type,
+            request.ListingType,
+            request.Location,
+            request.CategoryId,
+            request.CityId,
+            isAdmin);
+
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var newUrls = Array.Empty<string>();
         try
@@ -135,10 +148,7 @@ public sealed class PropertyCommandService(AppDbContext db, IImageStorage imageS
             return Result<bool>.Ok(true);
         }
 
-        property.IsApproved = true;
-        if (request.ListingType.HasValue)
-            property.ListingType = request.ListingType.Value;
-        property.Status = PropertyStatus.Available;
+        property.Approve(request.ListingType);
         await db.SaveChangesAsync(ct);
         return Result<bool>.Ok(true);
     }
@@ -150,23 +160,6 @@ public sealed class PropertyCommandService(AppDbContext db, IImageStorage imageS
         if (request.CityId.HasValue && !await db.Cities.AnyAsync(x => x.Id == request.CityId.Value, ct))
             return "City not found.";
         return null;
-    }
-
-    private static void UpdatePropertyValues(Property property, UpdatePropertyRequest request, bool isAdmin)
-    {
-        property.Title = request.Title.Trim();
-        property.Description = request.Description.Trim();
-        property.Price = request.Price;
-        property.Area = request.Area;
-        property.Bedrooms = request.Bedrooms;
-        property.Bathrooms = request.Bathrooms;
-        property.Type = request.Type.Trim().ToLowerInvariant();
-        property.ListingType = request.ListingType;
-        property.Location = request.Location.Trim();
-        property.CategoryId = request.CategoryId;
-        property.CityId = request.CityId;
-        property.IsApproved = isAdmin;
-        property.Status = PropertyStatus.Available;
     }
 
     private static void AddImages(Property property, IEnumerable<string> urls)
