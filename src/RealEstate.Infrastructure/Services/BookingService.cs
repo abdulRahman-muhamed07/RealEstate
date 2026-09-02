@@ -3,6 +3,7 @@ using RealEstate.Application.Common;
 using RealEstate.Application.Features.Bookings;
 using RealEstate.Application.Interfaces;
 using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 using RealEstate.Infrastructure.Persistence;
 
 namespace RealEstate.Infrastructure.Services;
