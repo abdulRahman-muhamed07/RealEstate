@@ -66,7 +66,7 @@ public sealed class PropertyCommandService(AppDbContext db, IImageStorage imageS
         var property = await db.Properties.Include(x => x.Images).FirstOrDefaultAsync(x => x.Id == id, ct);
         if (property is null)
             return Result<bool>.Fail(ErrorCode.NotFound, "Property not found.");
-        if (!isAdmin && property.OwnerId != userId)
+        if (!property.CanBeModifiedBy(userId, isAdmin))
             return Result<bool>.Fail(ErrorCode.Forbidden, "You cannot update this property.");
 
         var validation = await ValidateReferencesAsync(request, ct);
@@ -120,7 +120,7 @@ public sealed class PropertyCommandService(AppDbContext db, IImageStorage imageS
         var property = await db.Properties.Include(x => x.Images).FirstOrDefaultAsync(x => x.Id == id, ct);
         if (property is null)
             return Result<bool>.Fail(ErrorCode.NotFound, "Property not found.");
-        if (!isAdmin && property.OwnerId != userId)
+        if (!property.CanBeModifiedBy(userId, isAdmin))
             return Result<bool>.Fail(ErrorCode.Forbidden, "You cannot delete this property.");
         return await DeletePropertyAsync(property, ct);
     }
