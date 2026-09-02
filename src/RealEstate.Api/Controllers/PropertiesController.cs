@@ -5,7 +5,6 @@ using RealEstate.Api.Extensions;
 using RealEstate.Api.Models;
 using RealEstate.Application.Features.Properties;
 using RealEstate.Application.Interfaces;
-using RealEstate.Domain.Entities;
 
 namespace RealEstate.Api.Controllers;
 
@@ -34,12 +33,12 @@ public sealed class PropertiesController(IPropertyQueryService queryService, IPr
     [Authorize(Roles = "Vendor,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromForm] PropertyFormRequest request, CancellationToken ct) =>
-        this.ToActionResult(await commandService.UpdateAsync(id, request.ToApplication(), UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
+        this.ToActionResult(await commandService.UpdateAsync(id, request.ToApplication(), UserId(), User.IsInRole("Admin"), ct));
 
     [Authorize(Roles = "Vendor,Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct) =>
-        this.ToActionResult(await commandService.DeleteAsync(id, UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
+        this.ToActionResult(await commandService.DeleteAsync(id, UserId(), User.IsInRole("Admin"), ct));
 
     [Authorize]
     [HttpGet("mine")]
