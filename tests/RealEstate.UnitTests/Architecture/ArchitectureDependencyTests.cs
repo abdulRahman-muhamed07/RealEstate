@@ -7,7 +7,7 @@ public sealed class ArchitectureDependencyTests
     [Fact]
     public void Domain_does_not_reference_outer_layers_or_frameworks()
     {
-        var references = ReferencedAssemblyNames(typeof(Domain.Entities.Property).Assembly);
+        var references = ReferencedAssemblyNames(typeof(global::RealEstate.Domain.Entities.Property).Assembly);
 
         Assert.DoesNotContain("RealEstate.Application", references);
         Assert.DoesNotContain("RealEstate.Infrastructure", references);
@@ -18,7 +18,7 @@ public sealed class ArchitectureDependencyTests
     [Fact]
     public void Application_does_not_reference_infrastructure_or_api()
     {
-        var references = ReferencedAssemblyNames(typeof(Application.Interfaces.IPropertyQueryService).Assembly);
+        var references = ReferencedAssemblyNames(typeof(global::RealEstate.Application.Interfaces.IPropertyQueryService).Assembly);
 
         Assert.DoesNotContain("RealEstate.Infrastructure", references);
         Assert.DoesNotContain("RealEstate.Api", references);
@@ -27,7 +27,7 @@ public sealed class ArchitectureDependencyTests
     [Fact]
     public void Infrastructure_does_not_reference_api()
     {
-        var references = ReferencedAssemblyNames(typeof(Infrastructure.Persistence.AppDbContext).Assembly);
+        var references = ReferencedAssemblyNames(typeof(global::RealEstate.Infrastructure.Persistence.AppDbContext).Assembly);
 
         Assert.DoesNotContain("RealEstate.Api", references);
     }
