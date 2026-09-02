@@ -32,6 +32,14 @@ public sealed class ArchitectureDependencyTests
         Assert.DoesNotContain("RealEstate.Api", references);
     }
 
+    [Fact]
+    public void Api_does_not_reference_domain_directly()
+    {
+        var references = ReferencedAssemblyNames(typeof(global::RealEstate.Api.Controllers.PropertiesController).Assembly);
+
+        Assert.DoesNotContain("RealEstate.Domain", references);
+    }
+
     private static HashSet<string> ReferencedAssemblyNames(Assembly assembly) =>
         assembly.GetReferencedAssemblies()
             .Select(x => x.Name)
