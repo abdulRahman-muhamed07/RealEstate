@@ -18,12 +18,12 @@ public sealed class AdminController(IAdminService adminService, IPropertyCommand
 
     [HttpDelete("users/{id}")]
     public async Task<IActionResult> DeleteUser(string id, CancellationToken ct) =>
-        this.ToActionResult(await adminService.DeleteUserAsync(id, ct));
+        this.ToActionResult<bool>(await adminService.DeleteUserAsync(id, ct));
 
     [HttpGet("properties")]
     public async Task<IActionResult> Properties(CancellationToken ct) => Ok(await adminService.GetPropertiesAsync(ct));
 
     [HttpDelete("properties/{id:int}")]
     public async Task<IActionResult> DeleteProperty(int id, CancellationToken ct) =>
-        this.ToActionResult(await propertyCommandService.DeleteByAdminAsync(id, ct));
+        this.ToActionResult<bool>(await propertyCommandService.DeleteByAdminAsync(id, ct));
 }
