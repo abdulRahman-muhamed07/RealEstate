@@ -6,6 +6,7 @@ using RealEstate.Api.Models;
 using RealEstate.Application.Features.Properties;
 using RealEstate.Application.Interfaces;
 using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Api.Controllers;
 
@@ -27,19 +28,19 @@ public sealed class PropertiesController(IPropertyQueryService queryService, IPr
     {
         var result = await commandService.CreateAsync(request.ToApplication(), UserId(), ct);
         if (!result.Success)
-            return this.ToActionResult(result);
+            return this.ToActionResult<int>(result);
         return CreatedAtAction(nameof(GetById), new { id = result.Data }, new { id = result.Data });
     }
 
     [Authorize(Roles = "Vendor,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromForm] PropertyFormRequest request, CancellationToken ct) =>
-        this.ToActionResult(await commandService.UpdateAsync(id, request.ToApplication(), UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
+        this.ToActionResult<bool>(await commandService.UpdateAsync(id, request.ToApplication(), UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
 
     [Authorize(Roles = "Vendor,Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct) =>
-        this.ToActionResult(await commandService.DeleteAsync(id, UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
+        this.ToActionResult<bool>(await commandService.DeleteAsync(id, UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
 
     [Authorize]
     [HttpGet("mine")]
@@ -52,7 +53,7 @@ public sealed class PropertiesController(IPropertyQueryService queryService, IPr
     [Authorize(Roles = "Admin")]
     [HttpPatch("admin/{id:int}/status")]
     public async Task<IActionResult> Approve(int id, ApprovePropertyRequest request, CancellationToken ct) =>
-        this.ToActionResult(await commandService.ApproveAsync(id, request, ct));
+        this.ToActionResult<bool>(await commandService.ApproveAsync(id, request, ct));
 
     private string UserId() =>
         User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException();
