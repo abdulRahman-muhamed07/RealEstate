@@ -5,6 +5,7 @@ using RealEstate.Api.Extensions;
 using RealEstate.Application.Features.Bookings;
 using RealEstate.Application.Interfaces;
 using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Api.Controllers;
 
