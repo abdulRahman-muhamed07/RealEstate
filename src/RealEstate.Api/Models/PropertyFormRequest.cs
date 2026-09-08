@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using RealEstate.Application.Common;
 using RealEstate.Application.Features.Properties;
 using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 
 namespace RealEstate.Api.Models;
 
