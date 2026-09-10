@@ -17,11 +17,11 @@ public sealed class FavoritesController(IFavoriteService service) : ControllerBa
 
     [HttpPost]
     public async Task<IActionResult> Add(FavoriteRequest request, CancellationToken ct) =>
-        this.ToActionResult(await service.AddAsync(request.PropertyId, UserId(), ct));
+        this.ToActionResult<bool>(await service.AddAsync(request.PropertyId, UserId(), ct));
 
     [HttpDelete("{propertyId:int}")]
     public async Task<IActionResult> Remove(int propertyId, CancellationToken ct) =>
-        this.ToActionResult(await service.RemoveAsync(propertyId, UserId(), ct));
+        this.ToActionResult<bool>(await service.RemoveAsync(propertyId, UserId(), ct));
 
     private string UserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException();
 }
