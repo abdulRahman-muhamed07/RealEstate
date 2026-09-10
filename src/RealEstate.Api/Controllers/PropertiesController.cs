@@ -35,7 +35,7 @@ public sealed class PropertiesController(IPropertyQueryService queryService, IPr
     [Authorize(Roles = "Vendor,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromForm] PropertyFormRequest request, CancellationToken ct) =>
-        this.ToActionResult<bool>(await commandService.UpdateAsync(id, request.ToApplication(), UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
+        this.ToActionResult<bool>(await commandService.UpdateAsync(id, request.ToUpdateApplication(), UserId(), User.IsInRole(nameof(UserRole.Admin)), ct));
 
     [Authorize(Roles = "Vendor,Admin")]
     [HttpDelete("{id:int}")]
