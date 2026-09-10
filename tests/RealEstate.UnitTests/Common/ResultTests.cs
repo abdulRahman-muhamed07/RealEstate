@@ -1,4 +1,5 @@
 using RealEstate.Application.Common;
+using Xunit;
 
 namespace RealEstate.UnitTests.Common;
 
