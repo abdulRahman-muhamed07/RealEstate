@@ -37,4 +37,20 @@ public sealed class PropertyFormRequest
         CityId = CityId,
         Images = Images.Select(x => new UploadedFile(x.FileName, x.ContentType, x.Length, x.OpenReadStream)).ToArray()
     };
+
+    public UpdatePropertyRequest ToUpdateApplication() => new()
+    {
+        Title = Title,
+        Description = Description,
+        Price = Price,
+        Area = Area,
+        Bedrooms = Bedrooms,
+        Bathrooms = Bathrooms,
+        Type = Type,
+        ListingType = ListingType,
+        Location = Location,
+        CategoryId = CategoryId,
+        CityId = CityId,
+        Images = Images.Select(x => new UploadedFile(x.FileName, x.ContentType, x.Length, x.OpenReadStream)).ToArray()
+    };
 }
