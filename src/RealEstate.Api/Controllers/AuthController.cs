@@ -11,9 +11,9 @@ public sealed class AuthController(IAuthService service) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken ct) =>
-        (await service.RegisterAsync(request, ct)).ToActionResult<AuthResponse>(this);
+        this.ToActionResult<AuthResponse>(await service.RegisterAsync(request, ct));
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken ct) =>
-        (await service.LoginAsync(request, ct)).ToActionResult<AuthResponse>(this);
+        this.ToActionResult<AuthResponse>(await service.LoginAsync(request, ct));
 }
