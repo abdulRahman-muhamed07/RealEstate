@@ -17,17 +17,17 @@ public sealed class ReviewsController(IReviewService service) : ControllerBase
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> Create(CreateReviewRequest request, CancellationToken ct) =>
-        this.ToActionResult(await service.CreateAsync(request, UserId(), ct));
+        this.ToActionResult<ReviewDto>(await service.CreateAsync(request, UserId(), ct));
 
     [Authorize]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateReviewRequest request, CancellationToken ct) =>
-        this.ToActionResult(await service.UpdateAsync(id, request, UserId(), ct));
+        this.ToActionResult<bool>(await service.UpdateAsync(id, request, UserId(), ct));
 
     [Authorize]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct) =>
-        this.ToActionResult(await service.DeleteAsync(id, UserId(), User.IsInRole("Admin"), ct));
+        this.ToActionResult<bool>(await service.DeleteAsync(id, UserId(), User.IsInRole("Admin"), ct));
 
     [Authorize]
     [HttpGet("my-reviews")]
