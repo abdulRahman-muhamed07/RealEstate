@@ -15,4 +15,15 @@ public sealed record LoginRequest(
     [property:Required, EmailAddress, StringLength(256)] string Email,
     [property:Required, StringLength(128)] string Password);
 
-public sealed record AuthResponse(string Token, string UserId, string FirstName, string LastName, string Email, UserRole Role);
+public sealed record RefreshTokenRequest(
+    [property:Required] string RefreshToken);
+
+public sealed record AuthResponse(
+    string Token,
+    string RefreshToken,
+    DateTime AccessTokenExpiresAt,
+    string UserId,
+    string FirstName,
+    string LastName,
+    string Email,
+    UserRole Role);

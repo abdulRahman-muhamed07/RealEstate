@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstate.Api.Extensions;
 using RealEstate.Application.Features.Auth;
 using RealEstate.Application.Interfaces;
-using RealEstate.Api.Extensions;
 
 namespace RealEstate.Api.Controllers;
 
@@ -16,4 +16,8 @@ public sealed class AuthController(IAuthService service) : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken ct) =>
         this.ToActionResult<AuthResponse>(await service.LoginAsync(request, ct));
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshTokenRequest request, CancellationToken ct) =>
+        this.ToActionResult<AuthResponse>(await service.RefreshAsync(request.RefreshToken, ct));
 }

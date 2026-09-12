@@ -8,7 +8,7 @@ using RealEstate.Infrastructure.Persistence;
 
 namespace RealEstate.Infrastructure.Services;
 
-public sealed class BookingService(AppDbContext db) : IBookingService
+public sealed class BookingService(AppDbContext db, INotificationService notifications) : IBookingService
 {
     public async Task<Result<BookingDto>> CreateAsync(int propertyId, string userId, CancellationToken ct)
     {
@@ -21,15 +21,10 @@ public sealed class BookingService(AppDbContext db) : IBookingService
 
         var booking = new Booking { PropertyId = propertyId, UserId = userId };
         db.Bookings.Add(booking);
-        try
-        {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException)
-        {
-            return Result<BookingDto>.Fail(ErrorCode.Conflict, "A booking already exists for this property.");
-        }
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateException) { return Result<BookingDto>.Fail(ErrorCode.Conflict, "A booking already exists for this property."); }
 
+        await notifications.CreateAsync(property.OwnerId, "New booking request", $"A new booking request was created for '{property.Title}'.", "Booking", ct);
         return Result<BookingDto>.Ok(new BookingDto(booking.Id, booking.PropertyId, property.Title, booking.UserId, string.Empty, booking.BookingDate, booking.Status, booking.CreatedAt));
     }
 
@@ -49,7 +44,6 @@ public sealed class BookingService(AppDbContext db) : IBookingService
     {
         var booking = await db.Bookings.Include(x => x.Property).FirstOrDefaultAsync(x => x.Id == id, ct);
         if (booking is null) return Result<bool>.Fail(ErrorCode.NotFound, "Booking not found.");
-
         var allowed = status switch
         {
             BookingStatus.Cancelled => booking.UserId == userId && booking.Status == BookingStatus.Pending,
@@ -57,7 +51,6 @@ public sealed class BookingService(AppDbContext db) : IBookingService
             _ => false
         };
         if (!allowed) return Result<bool>.Fail(ErrorCode.Forbidden, "You are not allowed to change this booking.");
-
         if (status == BookingStatus.Confirmed)
         {
             var activeBookingExists = await db.Bookings.AnyAsync(x => x.PropertyId == booking.PropertyId && x.Id != booking.Id && x.Status == BookingStatus.Confirmed, ct);
@@ -67,6 +60,18 @@ public sealed class BookingService(AppDbContext db) : IBookingService
         if (status == BookingStatus.Cancelled && booking.Property.Status == PropertyStatus.Booked) booking.Property.Status = PropertyStatus.Available;
         booking.Status = status;
         await db.SaveChangesAsync(ct);
+        var message = status switch
+        {
+            BookingStatus.Confirmed => $"Your booking for '{booking.Property.Title}' was confirmed.",
+            BookingStatus.Rejected => $"Your booking for '{booking.Property.Title}' was rejected.",
+            BookingStatus.Cancelled => $"Your booking for '{booking.Property.Title}' was cancelled.",
+            _ => null
+        };
+        if (message is not null)
+        {
+            var recipient = status == BookingStatus.Cancelled ? booking.Property.OwnerId : booking.UserId;
+            await notifications.CreateAsync(recipient, $"Booking {status}", message, "Booking", ct);
+        }
         return Result<bool>.Ok(true);
     }
 }

@@ -28,7 +28,7 @@ public sealed class AuthService(AppDbContext db, ITokenService tokenService) : I
         db.Users.Add(user);
         try { await db.SaveChangesAsync(ct); }
         catch (DbUpdateException) { return Result<AuthResponse>.Fail(ErrorCode.Conflict, "The account could not be created because the email already exists."); }
-        return Result<AuthResponse>.Ok(ToResponse(user));
+        return Result<AuthResponse>.Ok(await IssueTokensAsync(user, ct));
     }
 
     public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken ct)
@@ -38,8 +38,33 @@ public sealed class AuthService(AppDbContext db, ITokenService tokenService) : I
         if (user is null) return Result<AuthResponse>.Fail(ErrorCode.Unauthorized, "Invalid email or password.");
         var verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (verification == PasswordVerificationResult.Failed) return Result<AuthResponse>.Fail(ErrorCode.Unauthorized, "Invalid email or password.");
-        return Result<AuthResponse>.Ok(ToResponse(user));
+        return Result<AuthResponse>.Ok(await IssueTokensAsync(user, ct));
     }
 
-    private AuthResponse ToResponse(User user) => new(tokenService.CreateToken(user), user.Id, user.FirstName, user.LastName, user.Email, user.Role);
+    public async Task<Result<AuthResponse>> RefreshAsync(string refreshToken, CancellationToken ct)
+    {
+        var existing = await db.RefreshTokens.Include(x => x.User)
+            .SingleOrDefaultAsync(x => x.Token == refreshToken, ct);
+        if (existing is null || !existing.IsActive)
+            return Result<AuthResponse>.Fail(ErrorCode.Unauthorized, "Refresh token is invalid or expired.");
+
+        existing.RevokedAt = DateTime.UtcNow;
+        var response = await IssueTokensAsync(existing.User, ct);
+        await db.SaveChangesAsync(ct);
+        return Result<AuthResponse>.Ok(response);
+    }
+
+    private async Task<AuthResponse> IssueTokensAsync(User user, CancellationToken ct)
+    {
+        var access = tokenService.CreateAccessToken(user);
+        var refresh = tokenService.CreateRefreshToken();
+        db.RefreshTokens.Add(new RefreshToken
+        {
+            UserId = user.Id,
+            Token = refresh,
+            ExpiresAt = DateTime.UtcNow.AddDays(30)
+        });
+        await db.SaveChangesAsync(ct);
+        return new AuthResponse(access.Token, refresh, access.ExpiresAt, user.Id, user.FirstName, user.LastName, user.Email, user.Role);
+    }
 }
