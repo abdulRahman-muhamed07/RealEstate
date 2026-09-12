@@ -4,5 +4,6 @@ namespace RealEstate.Application.Interfaces;
 
 public interface ITokenService
 {
-    string CreateToken(User user);
+    (string Token, DateTime ExpiresAt) CreateAccessToken(User user);
+    string CreateRefreshToken();
 }
