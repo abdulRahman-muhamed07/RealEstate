@@ -24,7 +24,7 @@ public sealed class ViewingAppointmentService(AppDbContext db) : IViewingAppoint
             return Result<ViewingAppointmentDto>.Fail(ErrorCode.InvalidOperation, "You cannot schedule a viewing for your own property.");
 
         var overlap = await db.ViewingAppointments.AnyAsync(x => x.PropertyId == request.PropertyId &&
-            x.Status is ViewingAppointmentStatus.Pending or ViewingAppointmentStatus.Confirmed &&
+            (x.Status == ViewingAppointmentStatus.Pending || x.Status == ViewingAppointmentStatus.Confirmed) &&
             request.StartAt < x.EndAt && request.EndAt > x.StartAt, ct);
         if (overlap)
             return Result<ViewingAppointmentDto>.Fail(ErrorCode.Conflict, "The selected time is already booked.");
