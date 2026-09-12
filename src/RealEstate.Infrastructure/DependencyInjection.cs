@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IImageStorage, LocalImageStorage>();
+        services.AddScoped<IViewingAppointmentService, ViewingAppointmentService>();
         return services;
     }
 }
