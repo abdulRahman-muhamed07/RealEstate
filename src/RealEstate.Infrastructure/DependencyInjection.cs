@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IImageStorage, LocalImageStorage>();
         services.AddScoped<IViewingAppointmentService, ViewingAppointmentService>();
         services.AddScoped<ISavedSearchService, SavedSearchService>();
+        services.AddScoped<INotificationService, NotificationService>();
         return services;
     }
 }
