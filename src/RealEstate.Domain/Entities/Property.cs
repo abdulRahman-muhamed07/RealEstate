@@ -16,6 +16,8 @@ public sealed class Property
     public ListingType ListingType { get; set; } = ListingType.Sale;
     public PropertyStatus Status { get; set; } = PropertyStatus.Available;
     [MaxLength(250)] public string Location { get; set; } = string.Empty;
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public bool IsApproved { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string OwnerId { get; set; } = string.Empty;
@@ -28,6 +30,7 @@ public sealed class Property
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
     public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+    public ICollection<ViewingAppointment> ViewingAppointments { get; set; } = new List<ViewingAppointment>();
 }
 
 public sealed class PropertyImage
